@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -26,6 +27,11 @@ login_manager.login_view = "auth.login"
 
 # Ensure upload directory exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+# Add template context processor for datetime
+@app.context_processor
+def inject_now():
+    return {'now': datetime.utcnow()}
 
 with app.app_context():
     import models

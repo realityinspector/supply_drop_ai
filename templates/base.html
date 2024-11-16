@@ -1,56 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUPPLY DROP AI - Disaster Preparedness Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-gray-800 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <a href="{{ url_for('chat.index') }}" class="flex items-center space-x-2">
-                    <img src="{{ url_for('static', filename='logo.png') }}" alt="SUPPLY DROP AI Logo" class="h-8 w-auto">
-                    <span class="text-xl font-semibold">SUPPLY DROP AI</span>
-                </a>
-                
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="{{ url_for('chat.chat_page') }}" class="text-gray-300 hover:text-white transition-colors">Chat</a>
-                    <a href="{{ url_for('chat.documents') }}" class="text-gray-300 hover:text-white transition-colors">Documents</a>
-                    <a href="{{ url_for('chat.checklists') }}" class="text-gray-300 hover:text-white transition-colors">Checklists</a>
-                
-                    {% if current_user.is_authenticated %}
-                        <span class="text-gray-300">{{ current_user.username }}</span>
-                        <a href="{{ url_for('auth.logout') }}" 
-                           class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                            Logout
-                        </a>
-                    {% else %}
-                        <a href="{{ url_for('auth.login') }}" class="text-gray-300 hover:text-white transition-colors">Login</a>
-                        <a href="{{ url_for('auth.signup') }}" 
-                           class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            Sign Up
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </nav>
+<body class="bg-gray-100 min-h-full flex flex-col">
+    {% include '_header.html' %}
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="mb-4 p-4 rounded-lg {% if category == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        {% block content %}{% endblock %}
+    <main class="flex-grow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {% block content %}{% endblock %}
+        </div>
     </main>
+
+    {% include '_footer.html' %}
 
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
