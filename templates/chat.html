@@ -5,12 +5,12 @@
     <div class="col-md-3">
         <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0">Document Upload</h5>
+                <h5 class="mb-0">Resource Documents</h5>
             </div>
             <div class="card-body">
                 <form id="uploadForm">
                     <div class="mb-3">
-                        <label for="document" class="form-label">Upload Document</label>
+                        <label for="document" class="form-label">Upload Emergency Plans & Resources</label>
                         <input type="file" class="form-control" id="document" accept=".pdf,.docx,.txt">
                     </div>
                     <button type="submit" class="btn btn-primary">Upload</button>
@@ -20,15 +20,15 @@
         
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Chat History</h5>
+                <h5 class="mb-0">Assistance History</h5>
             </div>
             <div class="list-group list-group-flush">
                 <button class="list-group-item list-group-item-action" id="newChat">
-                    + New Chat
+                    + New Assistance Chat
                 </button>
                 {% for chat in chats %}
                 <a href="#" class="list-group-item list-group-item-action" data-chat-id="{{ chat.id }}">
-                    {{ chat.title or 'Chat ' ~ chat.id }}
+                    {{ chat.title or 'Emergency Plan ' ~ chat.id }}
                 </a>
                 {% endfor %}
             </div>
@@ -42,7 +42,7 @@
             </div>
             <div class="card-footer">
                 <form id="messageForm" class="d-flex">
-                    <input type="text" class="form-control me-2" id="messageInput" placeholder="Type your message...">
+                    <input type="text" class="form-control me-2" id="messageInput" placeholder="Ask about emergency preparedness...">
                     <button type="submit" class="btn btn-primary">Send</button>
                 </form>
             </div>
