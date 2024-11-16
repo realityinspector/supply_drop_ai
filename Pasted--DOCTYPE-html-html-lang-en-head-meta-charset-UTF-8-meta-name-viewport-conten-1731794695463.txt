@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUPPLY DROP AI - Disaster Preparedness Assistant</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+</head>
+<body class="bg-gray-50">
+    <nav class="bg-white shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <a href="/" class="flex items-center">
+                    <img src="/static/logo.png" alt="SUPPLY DROP AI Logo" class="navbar-logo">
+                </a>
+                
+                <div class="hidden md:flex space-x-8">
+                    <a href="/" class="text-gray-700 hover:text-blue-600">Chat</a>
+                    <a href="/documents" class="text-gray-700 hover:text-blue-600">Documents</a>
+                    <a href="/checklists" class="text-gray-700 hover:text-blue-600">Checklists</a>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    
+                        <span class="text-gray-700">testuser</span>
+                        <a href="/logout" class="text-gray-700 hover:text-blue-600">Logout</a>
+                    
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8">
+        
+            
+        
+        
+        
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Resource Documents</h5>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="document" class="form-label">Upload Emergency Plans & Resources</label>
+                        <input type="file" class="form-control" id="document" accept=".pdf,.docx,.txt">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Assistance History</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <button class="list-group-item list-group-item-action" id="newChat">
+                    + New Assistance Chat
+                </button>
+                
+                <a href="#" class="list-group-item list-group-item-action" data-chat-id="1">
+                    New Chat
+                </a>
+                
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card chat-container">
+            <div class="card-body" id="chatMessages">
+                <!-- Messages will be inserted here -->
+            </div>
+            <div class="card-footer">
+                <form id="messageForm" class="d-flex">
+                    <input type="text" class="form-control me-2" id="messageInput" placeholder="Ask about emergency preparedness...">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/chat.js"></script>
+
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

@@ -1,54 +1,44 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-3">
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">Resource Documents</h5>
-            </div>
-            <div class="card-body">
-                <form id="uploadForm">
-                    <div class="mb-3">
-                        <label for="document" class="form-label">Upload Emergency Plans & Resources</label>
-                        <input type="file" class="form-control" id="document" accept=".pdf,.docx,.txt">
-                    </div>
-                    <button type="submit" class="btn btn-primary">Upload</button>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Assistance History</h5>
-            </div>
-            <div class="list-group list-group-flush">
-                <button class="list-group-item list-group-item-action" id="newChat">
+<div class="flex h-[calc(100vh-5rem)]">
+    <!-- Sidebar -->
+    <div class="w-64 bg-white shadow-md flex flex-col">
+        <!-- Chat History -->
+        <div class="flex-1 overflow-y-auto p-4">
+            <h2 class="text-lg font-semibold mb-4">Assistance History</h2>
+            <div class="space-y-2">
+                <button id="newChat" class="w-full text-left px-4 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
                     + New Assistance Chat
                 </button>
                 {% for chat in chats %}
-                <a href="#" class="list-group-item list-group-item-action" data-chat-id="{{ chat.id }}">
+                <a href="#" class="block px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors" data-chat-id="{{ chat.id }}">
                     {{ chat.title or 'Emergency Plan ' ~ chat.id }}
                 </a>
                 {% endfor %}
             </div>
         </div>
     </div>
-    
-    <div class="col-md-9">
-        <div class="card chat-container">
-            <div class="card-body" id="chatMessages">
-                <!-- Messages will be inserted here -->
-            </div>
-            <div class="card-footer">
-                <form id="messageForm" class="d-flex">
-                    <input type="text" class="form-control me-2" id="messageInput" placeholder="Ask about emergency preparedness...">
-                    <button type="submit" class="btn btn-primary">Send</button>
-                </form>
-            </div>
+
+    <!-- Chat Area -->
+    <div class="flex-1 flex flex-col bg-gray-50">
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Messages will be inserted here -->
+        </div>
+        <div class="p-4 bg-white border-t">
+            <form id="messageForm" class="flex gap-4">
+                <input type="text" 
+                       id="messageInput" 
+                       class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       placeholder="Ask about emergency preparedness...">
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Send
+                </button>
+            </form>
         </div>
     </div>
 </div>
+{% endblock %}
 
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-{% endblock %}

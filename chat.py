@@ -14,9 +14,10 @@ def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
 
 @chat_bp.route('/')
-@login_required
 def index():
-    return redirect(url_for('chat.chat_page'))
+    if current_user.is_authenticated:
+        return redirect(url_for('chat.chat_page'))
+    return render_template('index.html')
 
 @chat_bp.route('/chat')
 @login_required
@@ -83,22 +84,19 @@ def send_message(chat_id):
         try:
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
-                messages=messages,
+                messages=[
+                    {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
+                    *messages
+                ],
                 temperature=0.7,
                 max_tokens=1000
             )
             assistant_content = response.choices[0].message.content
             break
-        except openai.RateLimitError:
-            if attempt == max_attempts - 1:
-                return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
-            exponential_backoff(attempt)
-        except openai.APIConnectionError:
-            return jsonify({'error': 'Failed to connect to OpenAI API. Please try again later.'}), 503
-        except openai.APIError as e:
-            return jsonify({'error': f'OpenAI API error: {str(e)}'}), 500
         except Exception as e:
-            return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+            if attempt == max_attempts - 1:
+                return jsonify({'error': f'Failed to get response: {str(e)}'}), 500
+            exponential_backoff(attempt)
 
     # Save assistant message
     assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')

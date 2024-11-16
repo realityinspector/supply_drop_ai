@@ -1,46 +1,13 @@
 let currentChatId = null;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Document upload handling
-    const uploadForm = document.getElementById('uploadForm');
-    const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB in bytes
-
-    uploadForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fileInput = document.getElementById('document');
-        const file = fileInput.files[0];
-        if (!file) {
-            alert('Please select a file');
-            return;
-        }
-
-        if (file.size > MAX_FILE_SIZE) {
-            alert('File size exceeds 16MB limit');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
-            });
-            const data = await response.json();
-            if (response.ok) {
-                alert('Document uploaded successfully');
-                fileInput.value = '';
-            } else {
-                alert(data.error || 'Upload failed');
-            }
-        } catch (error) {
-            alert('Upload failed: ' + error.message);
-        }
-    });
+    // Message form handling
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatMessages = document.getElementById('chatMessages');
 
     // New chat handling
-    document.getElementById('newChat').addEventListener('click', async () => {
+    document.getElementById('newChat')?.addEventListener('click', async () => {
         try {
             const response = await fetch('/chat/new', {
                 method: 'POST'
@@ -58,12 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Message form handling
-    const messageForm = document.getElementById('messageForm');
-    const messageInput = document.getElementById('messageInput');
-    const chatMessages = document.getElementById('chatMessages');
-
-    messageForm.addEventListener('submit', async (e) => {
+    messageForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!currentChatId) {
             alert('Please select or create a chat first');
@@ -132,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function appendMessage(role, content) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message ${role}-message mb-3`;
+    messageDiv.className = `chat-message ${role}-message mb-4`;
     const roleDisplay = {
         'user': 'You',
         'assistant': 'Assistant',
@@ -140,9 +102,9 @@ function appendMessage(role, content) {
     }[role];
     
     messageDiv.innerHTML = `
-        <div class="message-content p-3 rounded">
-            <strong>${roleDisplay}:</strong>
-            <p class="mb-0">${content}</p>
+        <div class="message-content p-3 rounded-lg">
+            <strong class="text-gray-700">${roleDisplay}:</strong>
+            <p class="mt-1 text-gray-800">${content}</p>
         </div>
     `;
     chatMessages.appendChild(messageDiv);
