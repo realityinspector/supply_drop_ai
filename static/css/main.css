@@ -3,18 +3,6 @@
 @tailwind utilities;
 
 /* Custom styles */
-.navbar-logo {
-    @apply h-8 w-auto object-contain;
-}
-
-.chat-container {
-    @apply h-[calc(100vh-200px)] flex flex-col;
-}
-
-#chatMessages {
-    @apply flex-grow overflow-y-auto p-4;
-}
-
 .chat-message {
     @apply max-w-[80%] mb-4;
 }
@@ -28,7 +16,7 @@
 }
 
 .message-content {
-    @apply p-3 rounded-lg;
+    @apply p-4 rounded-lg shadow-sm;
 }
 
 .user-message .message-content {
@@ -36,9 +24,20 @@
 }
 
 .assistant-message .message-content {
-    @apply bg-gray-200 text-gray-900;
+    @apply bg-white border border-gray-200 text-gray-800;
 }
 
-#messageForm {
-    @apply p-4 bg-white border-t border-gray-200;
+/* Form elements */
+input[type="checkbox"] {
+    @apply h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    @apply block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500;
+}
+
+button[type="submit"] {
+    @apply px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
 }

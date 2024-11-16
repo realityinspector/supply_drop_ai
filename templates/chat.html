@@ -25,7 +25,7 @@
         <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
             <!-- Messages will be inserted here -->
         </div>
-        <div class="p-4 bg-white border-t">
+        <div class="p-4 bg-white border-t border-gray-200">
             <form id="messageForm" class="flex gap-4">
                 <input type="text" 
                        id="messageInput" 
@@ -40,5 +40,3 @@
     </div>
 </div>
 {% endblock %}
-
-<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
