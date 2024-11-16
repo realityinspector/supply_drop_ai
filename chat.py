@@ -1,5 +1,5 @@
 import os
-import openai
+from openai import OpenAI
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from app import db
@@ -8,7 +8,7 @@ from document_processor import process_document
 import time
 
 chat_bp = Blueprint('chat', __name__)
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+client = OpenAI()  # This will use OPENAI_API_KEY from env
 
 def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
@@ -65,7 +65,7 @@ def send_message(chat_id):
     max_attempts = 5
     for attempt in range(max_attempts):
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=messages,
                 temperature=0.7,
@@ -77,6 +77,8 @@ def send_message(chat_id):
             if attempt == max_attempts - 1:
                 return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
             exponential_backoff(attempt)
+        except openai.APIConnectionError:
+            return jsonify({'error': 'Failed to connect to OpenAI API. Please try again later.'}), 503
         except openai.APIError as e:
             return jsonify({'error': f'OpenAI API error: {str(e)}'}), 500
         except Exception as e:
