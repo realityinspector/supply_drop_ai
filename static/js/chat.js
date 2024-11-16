@@ -3,11 +3,21 @@ let currentChatId = null;
 document.addEventListener('DOMContentLoaded', function() {
     // Document upload handling
     const uploadForm = document.getElementById('uploadForm');
+    const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB in bytes
+
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const fileInput = document.getElementById('document');
         const file = fileInput.files[0];
-        if (!file) return;
+        if (!file) {
+            alert('Please select a file');
+            return;
+        }
+
+        if (file.size > MAX_FILE_SIZE) {
+            alert('File size exceeds 16MB limit');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('file', file);
@@ -25,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(data.error || 'Upload failed');
             }
         } catch (error) {
-            alert('Upload failed');
+            alert('Upload failed: ' + error.message);
         }
     });
 
@@ -36,11 +46,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST'
             });
             const data = await response.json();
-            currentChatId = data.chat_id;
-            clearMessages();
-            location.reload();
+            if (response.ok) {
+                currentChatId = data.chat_id;
+                clearMessages();
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to create new chat');
+            }
         } catch (error) {
-            alert('Failed to create new chat');
+            alert('Failed to create new chat: ' + error.message);
         }
     });
 
@@ -62,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add user message to chat
         appendMessage('user', message);
         messageInput.value = '';
+        messageInput.disabled = true;
 
         try {
             const response = await fetch(`/chat/${currentChatId}/message`, {
@@ -76,20 +91,41 @@ document.addEventListener('DOMContentLoaded', function() {
             if (response.ok) {
                 appendMessage('assistant', data.message);
             } else {
-                alert(data.error || 'Failed to send message');
+                if (response.status === 429) {
+                    appendMessage('system', 'Rate limit exceeded. Please wait a moment before trying again.');
+                } else {
+                    appendMessage('system', data.error || 'Failed to send message');
+                }
             }
         } catch (error) {
-            alert('Failed to send message');
+            appendMessage('system', 'Failed to send message: ' + error.message);
+        } finally {
+            messageInput.disabled = false;
+            messageInput.focus();
         }
     });
 
     // Chat selection handling
     document.querySelectorAll('[data-chat-id]').forEach(element => {
-        element.addEventListener('click', (e) => {
+        element.addEventListener('click', async (e) => {
             e.preventDefault();
-            currentChatId = element.dataset.chatId;
+            const chatId = element.dataset.chatId;
+            if (currentChatId === chatId) return;
+            
+            currentChatId = chatId;
             clearMessages();
-            // Here you could load previous messages for this chat
+            
+            try {
+                const response = await fetch(`/chat/${chatId}/messages`);
+                const data = await response.json();
+                if (response.ok) {
+                    data.messages.forEach(msg => {
+                        appendMessage(msg.role, msg.content);
+                    });
+                }
+            } catch (error) {
+                appendMessage('system', 'Failed to load chat history');
+            }
         });
     });
 });
@@ -97,9 +133,15 @@ document.addEventListener('DOMContentLoaded', function() {
 function appendMessage(role, content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${role}-message mb-3`;
+    const roleDisplay = {
+        'user': 'You',
+        'assistant': 'Assistant',
+        'system': 'System'
+    }[role];
+    
     messageDiv.innerHTML = `
         <div class="message-content p-3 rounded">
-            <strong>${role === 'user' ? 'You' : 'Assistant'}:</strong>
+            <strong>${roleDisplay}:</strong>
             <p class="mb-0">${content}</p>
         </div>
     `;

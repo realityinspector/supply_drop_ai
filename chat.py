@@ -22,10 +22,24 @@ def index():
 @chat_bp.route('/chat/new', methods=['POST'])
 @login_required
 def new_chat():
-    chat = Chat(user_id=current_user.id, title="New Chat")
-    db.session.add(chat)
-    db.session.commit()
-    return jsonify({'chat_id': chat.id})
+    try:
+        chat = Chat(user_id=current_user.id, title="New Chat")
+        db.session.add(chat)
+        db.session.commit()
+        return jsonify({'chat_id': chat.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@chat_bp.route('/chat/<int:chat_id>/messages')
+@login_required
+def get_chat_messages(chat_id):
+    chat = Chat.query.get_or_404(chat_id)
+    if chat.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    messages = [{'role': msg.role, 'content': msg.content} for msg in chat.messages]
+    return jsonify({'messages': messages})
 
 @chat_bp.route('/chat/<int:chat_id>/message', methods=['POST'])
 @login_required
@@ -53,16 +67,20 @@ def send_message(chat_id):
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=messages
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1000
             )
             assistant_content = response.choices[0].message.content
             break
-        except openai.error.RateLimitError:
+        except openai.RateLimitError:
             if attempt == max_attempts - 1:
-                return jsonify({'error': 'Rate limit exceeded'}), 429
+                return jsonify({'error': 'Rate limit exceeded. Please try again later.'}), 429
             exponential_backoff(attempt)
+        except openai.APIError as e:
+            return jsonify({'error': f'OpenAI API error: {str(e)}'}), 500
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
     # Save assistant message
     assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
@@ -83,6 +101,11 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
+    # Check file size
+    if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
+        return jsonify({'error': 'File size exceeds 16MB limit'}), 400
+    file.seek(0)  # Reset file pointer after reading
+
     try:
         content = process_document(file)
         document = Document(
@@ -93,5 +116,8 @@ def upload_document():
         db.session.add(document)
         db.session.commit()
         return jsonify({'message': 'Document uploaded successfully'})
-    except Exception as e:
+    except ValueError as e:
         return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error processing document: {str(e)}'}), 500
