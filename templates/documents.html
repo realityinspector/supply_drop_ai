@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">Upload Emergency Documents</h2>
+        <form id="uploadForm" class="space-y-4">
+            <div>
+                <label for="document" class="block text-gray-700 font-medium mb-2">Upload Emergency Plans & Resources</label>
+                <input type="file" class="w-full p-2 border border-gray-300 rounded-md" id="document" accept=".pdf,.docx,.txt">
+            </div>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Upload</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold mb-4">Your Documents</h2>
+        <div class="space-y-4">
+            {% for document in documents %}
+            <div class="p-4 border border-gray-200 rounded-lg">
+                <h3 class="font-medium">{{ document.filename }}</h3>
+                <p class="text-gray-600 text-sm">Uploaded on {{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+            {% else %}
+            <p class="text-gray-600">No documents uploaded yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

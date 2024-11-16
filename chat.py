@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
 from app import db
 from models import Chat, Message, Document
@@ -16,8 +16,24 @@ def exponential_backoff(attempt):
 @chat_bp.route('/')
 @login_required
 def index():
+    return redirect(url_for('chat.chat_page'))
+
+@chat_bp.route('/chat')
+@login_required
+def chat_page():
     chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
     return render_template('chat.html', chats=chats)
+
+@chat_bp.route('/documents')
+@login_required
+def documents():
+    documents = Document.query.filter_by(user_id=current_user.id).all()
+    return render_template('documents.html', documents=documents)
+
+@chat_bp.route('/checklists')
+@login_required
+def checklists():
+    return render_template('checklists.html')
 
 @chat_bp.route('/chat/new', methods=['POST'])
 @login_required
