@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full bg-gray-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUPPLY DROP AI - Disaster Preparedness Assistant</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dist.css') }}">
 </head>
-<body class="bg-gray-100 min-h-full flex flex-col">
+<body class="h-full flex flex-col bg-gray-100">
     {% include '_header.html' %}
 
     <main class="flex-grow">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {% block content %}{% endblock %}
-        </div>
+        {% block content %}{% endblock %}
     </main>
 
     {% include '_footer.html' %}

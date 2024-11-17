@@ -32,7 +32,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 main.py"
-waitForPort = 5001
+waitForPort = 3000
 
 [[workflows.workflow]]
 name = "Tailwind CSS Build"
@@ -51,6 +51,18 @@ args = "npx tailwindcss -i ./static/css/main.css -o ./static/css/dist.css --watc
 [deployment]
 run = ["sh", "-c", "python3 main.py"]
 deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 3000
+externalPort = 3001
+
+[[ports]]
+localPort = 3001
+externalPort = 3002
+
+[[ports]]
+localPort = 3002
+externalPort = 3003
 
 [[ports]]
 localPort = 5000

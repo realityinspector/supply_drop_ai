@@ -1,4 +1,8 @@
-let currentChatId = null;
+// Chat functionality
+const chatState = {
+    currentChatId: null,
+    isProcessing: false
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     // Message form handling
@@ -7,41 +11,49 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chatMessages');
 
     // New chat handling
-    document.getElementById('newChat')?.addEventListener('click', async () => {
+    const newChatButton = document.getElementById('newChat');
+    newChatButton?.addEventListener('click', async () => {
+        if (chatState.isProcessing) return;
+        chatState.isProcessing = true;
+
         try {
             const response = await fetch('/chat/new', {
                 method: 'POST'
             });
             const data = await response.json();
             if (response.ok) {
-                currentChatId = data.chat_id;
+                chatState.currentChatId = data.chat_id;
                 clearMessages();
                 location.reload();
             } else {
-                alert(data.error || 'Failed to create new chat');
+                showError(data.error || 'Failed to create new chat');
             }
         } catch (error) {
-            alert('Failed to create new chat: ' + error.message);
+            showError('Failed to create new chat: ' + error.message);
+        } finally {
+            chatState.isProcessing = false;
         }
     });
 
     messageForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        if (!currentChatId) {
-            alert('Please select or create a chat first');
+        if (!chatState.currentChatId) {
+            showError('Please select or create a chat first');
             return;
         }
 
+        if (chatState.isProcessing) return;
         const message = messageInput.value.trim();
         if (!message) return;
 
+        chatState.isProcessing = true;
         // Add user message to chat
         appendMessage('user', message);
         messageInput.value = '';
         messageInput.disabled = true;
 
         try {
-            const response = await fetch(`/chat/${currentChatId}/message`, {
+            const response = await fetch(`/chat/${chatState.currentChatId}/message`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -62,6 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             appendMessage('system', 'Failed to send message: ' + error.message);
         } finally {
+            chatState.isProcessing = false;
             messageInput.disabled = false;
             messageInput.focus();
         }
@@ -71,10 +84,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('[data-chat-id]').forEach(element => {
         element.addEventListener('click', async (e) => {
             e.preventDefault();
-            const chatId = element.dataset.chatId;
-            if (currentChatId === chatId) return;
+            if (chatState.isProcessing) return;
             
-            currentChatId = chatId;
+            const chatId = element.dataset.chatId;
+            if (chatState.currentChatId === chatId) return;
+            
+            chatState.isProcessing = true;
+            chatState.currentChatId = chatId;
             clearMessages();
             
             try {
@@ -84,9 +100,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.messages.forEach(msg => {
                         appendMessage(msg.role, msg.content);
                     });
+                } else {
+                    throw new Error(data.error || 'Failed to load messages');
                 }
             } catch (error) {
-                appendMessage('system', 'Failed to load chat history');
+                appendMessage('system', 'Failed to load chat history: ' + error.message);
+            } finally {
+                chatState.isProcessing = false;
             }
         });
     });
@@ -94,23 +114,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function appendMessage(role, content) {
     const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message ${role}-message mb-4`;
+    messageDiv.className = `chat-message ${role}-message`;
+    
     const roleDisplay = {
         'user': 'You',
-        'assistant': 'Assistant',
+        'assistant': 'SUPPLY DROP AI',
         'system': 'System'
     }[role];
     
     messageDiv.innerHTML = `
-        <div class="message-content p-3 rounded-lg">
-            <strong class="text-gray-700">${roleDisplay}:</strong>
-            <p class="mt-1 text-gray-800">${content}</p>
+        <div class="message-content p-4 rounded-lg shadow-md ${
+            role === 'user' ? 'bg-blue-600 text-white ml-auto max-w-[80%]' :
+            role === 'assistant' ? 'bg-white border border-gray-200 mr-auto max-w-[80%]' :
+            'bg-gray-100 text-gray-600 mx-auto max-w-[90%] text-center'
+        }">
+            <div class="flex items-center gap-2">
+                <strong class="text-sm ${role === 'user' ? 'text-gray-100' : 'text-gray-600'}">${roleDisplay}</strong>
+            </div>
+            <p class="mt-2 ${role === 'user' ? 'text-white' : 'text-gray-800'} whitespace-pre-wrap">${content}</p>
         </div>
     `;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages?.appendChild(messageDiv);
+    chatMessages?.scrollTo({
+        top: chatMessages.scrollHeight,
+        behavior: 'smooth'
+    });
 }
 
 function clearMessages() {
-    chatMessages.innerHTML = '';
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+    }
+}
+
+function showError(message) {
+    appendMessage('system', message);
 }

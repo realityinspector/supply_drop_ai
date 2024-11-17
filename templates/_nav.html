@@ -1,10 +1,13 @@
 <div class="flex justify-between items-center h-16">
-    <a href="{{ url_for('chat.index') }}" class="flex items-center space-x-2">
-        <img src="{{ url_for('static', filename='logo.png') }}" alt="SUPPLY DROP AI Logo" class="h-8 w-auto">
-        <span class="text-xl font-semibold">SUPPLY DROP AI</span>
+    <a href="{{ url_for('chat.index') }}" class="flex items-center space-x-4">
+        <img src="{{ url_for('static', filename='logo.png') }}" 
+             alt="SUPPLY DROP AI Logo" 
+             class="h-10"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <span class="text-xl font-semibold hidden">SUPPLY DROP AI</span>
     </a>
     
-    <div class="hidden md:flex items-center space-x-8">
+    <div class="hidden md:flex items-center space-x-4">
         {% set nav_links = [
             ('chat.chat_page', 'Chat'),
             ('chat.documents', 'Documents'),
@@ -13,22 +16,22 @@
         
         {% for endpoint, label in nav_links %}
             <a href="{{ url_for(endpoint) }}" 
-               class="text-gray-300 hover:text-white transition-all duration-200 ease-in-out {% if request.endpoint == endpoint %}text-white font-medium{% endif %}"
+               class="text-sm hover:text-gray-400 transition-colors duration-200 {% if request.endpoint == endpoint %}text-white font-medium{% else %}text-gray-300{% endif %}"
                {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
                >{{ label }}</a>
         {% endfor %}
     
         {% if current_user.is_authenticated %}
-            <span class="text-gray-300">{{ current_user.username }}</span>
+            <span class="text-sm text-gray-300">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}" 
-               class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+               class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">
                 Logout
             </a>
         {% else %}
             <a href="{{ url_for('auth.login') }}" 
-               class="text-gray-300 hover:text-white transition-all duration-200 ease-in-out">Login</a>
+               class="text-sm text-gray-300 hover:text-white transition-colors">Login</a>
             <a href="{{ url_for('auth.signup') }}" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+               class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
                 Sign Up
             </a>
         {% endif %}
@@ -37,7 +40,7 @@
     <!-- Mobile menu button -->
     <button id="mobile-menu-button" 
             type="button" 
-            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-200"
+            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
             aria-controls="mobile-menu"
             aria-expanded="false">
         <span class="sr-only">Open main menu</span>
@@ -49,25 +52,33 @@
 
 <!-- Mobile menu -->
 <div id="mobile-menu" 
-     class="fixed inset-y-0 right-0 w-64 bg-gray-800 md:hidden transform translate-x-full transition-transform duration-300 ease-in-out z-50 shadow-lg"
-     aria-labelledby="mobile-menu-button">
-    <div class="px-2 pt-2 pb-3 space-y-1">
-        {% for endpoint, label in nav_links %}
-            <a href="{{ url_for(endpoint) }}" 
-               class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-all duration-200 ease-in-out {% if request.endpoint == endpoint %}bg-gray-700 text-white{% endif %}"
-               {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
-               >{{ label }}</a>
-        {% endfor %}
-        
-        {% if current_user.is_authenticated %}
-            <span class="block px-3 py-2 text-gray-300">{{ current_user.username }}</span>
-            <a href="{{ url_for('auth.logout') }}" 
-               class="block px-3 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-all duration-200 ease-in-out">Logout</a>
-        {% else %}
-            <a href="{{ url_for('auth.login') }}" 
-               class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-all duration-200 ease-in-out">Login</a>
-            <a href="{{ url_for('auth.signup') }}" 
-               class="block px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 ease-in-out">Sign Up</a>
-        {% endif %}
+     class="fixed inset-y-0 right-0 w-64 bg-gray-800 md:hidden transform translate-x-full transition-transform duration-300 ease-in-out z-50 shadow-lg">
+    <div class="px-4 pt-6 pb-3">
+        <div class="flex items-center mb-6">
+            <img src="{{ url_for('static', filename='logo.png') }}" 
+                 alt="SUPPLY DROP AI Logo" 
+                 class="h-8"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <span class="text-lg font-semibold text-white hidden">SUPPLY DROP AI</span>
+        </div>
+        <div class="space-y-1">
+            {% for endpoint, label in nav_links %}
+                <a href="{{ url_for(endpoint) }}" 
+                   class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors {% if request.endpoint == endpoint %}bg-gray-700 text-white{% endif %}"
+                   {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
+                   >{{ label }}</a>
+            {% endfor %}
+            
+            {% if current_user.is_authenticated %}
+                <span class="block px-3 py-2 text-gray-300">{{ current_user.username }}</span>
+                <a href="{{ url_for('auth.logout') }}" 
+                   class="block px-3 py-2 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}" 
+                   class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors">Login</a>
+                <a href="{{ url_for('auth.signup') }}" 
+                   class="block px-3 py-2 rounded-md text-white bg-blue-500 hover:bg-blue-600 transition-colors">Sign Up</a>
+            {% endif %}
+        </div>
     </div>
 </div>
