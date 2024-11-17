@@ -18,21 +18,21 @@
         <div class="mb-8">
             <div class="flex justify-between mb-2">
                 <div class="flex flex-col items-center w-1/3">
-                    <div id="step1Indicator" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold mb-2">1</div>
+                    <div id="step1Indicator" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold mb-2 transition-all duration-300">1</div>
                     <span class="text-sm text-center">Upload Requirements</span>
                 </div>
                 <div class="flex flex-col items-center w-1/3">
-                    <div id="step2Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2">2</div>
+                    <div id="step2Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2 transition-all duration-300">2</div>
                     <span class="text-sm text-center">Upload Claim</span>
                 </div>
                 <div class="flex flex-col items-center w-1/3">
-                    <div id="step3Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2">3</div>
+                    <div id="step3Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2 transition-all duration-300">3</div>
                     <span class="text-sm text-center">Analysis</span>
                 </div>
             </div>
             <div class="relative pt-1">
                 <div class="flex mb-2 items-center justify-between">
-                    <div class="w-full bg-gray-200 rounded-full">
+                    <div class="w-full bg-gray-200 rounded-full overflow-hidden">
                         <div id="progressBar" class="w-1/3 h-2 rounded-full bg-blue-600 transition-all duration-500"></div>
                     </div>
                 </div>
@@ -47,17 +47,28 @@
                 <form id="requirementsForm" class="space-y-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Select Requirements Document</label>
-                        <input type="file" 
-                               class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
-                               id="requirementsDoc" 
-                               accept=".pdf,.docx,.txt,.md,.json">
-                        <div id="requirementsProgress" class="progress-bar mt-2 hidden">
-                            <div class="progress-bar-fill" style="width: 0%"></div>
+                        <div class="relative">
+                            <input type="file" 
+                                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                   id="requirementsDoc" 
+                                   accept=".pdf,.docx,.txt,.md,.json">
+                            <div class="absolute right-0 top-0 h-full flex items-center pr-3">
+                                <svg class="animate-spin h-5 w-5 text-blue-500 hidden" id="requirementsSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
                         </div>
-                        <p id="requirementsStatus" class="status-message"></p>
+                        <div id="requirementsProgress" class="mt-2 hidden">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+                                <div class="progress-bar-fill bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 text-right" id="requirementsProgressText"></p>
+                        </div>
+                        <p id="requirementsStatus" class="status-message mt-2"></p>
                     </div>
                     <button type="submit" 
-                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200">
+                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200 relative">
                         <span class="relative inline-flex items-center">
                             Upload Requirements
                             <span class="absolute right-0 -mr-1 h-4 w-4 animate-ping rounded-full bg-white opacity-75 hidden"></span>
@@ -73,18 +84,29 @@
                 <form id="claimForm" class="space-y-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Select Claim Document</label>
-                        <input type="file" 
-                               class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
-                               id="claimDoc" 
-                               accept=".pdf,.docx,.txt,.md,.json"
-                               disabled>
-                        <div id="claimProgress" class="progress-bar mt-2 hidden">
-                            <div class="progress-bar-fill" style="width: 0%"></div>
+                        <div class="relative">
+                            <input type="file" 
+                                   class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                                   id="claimDoc" 
+                                   accept=".pdf,.docx,.txt,.md,.json"
+                                   disabled>
+                            <div class="absolute right-0 top-0 h-full flex items-center pr-3">
+                                <svg class="animate-spin h-5 w-5 text-blue-500 hidden" id="claimSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
                         </div>
-                        <p id="claimStatus" class="status-message"></p>
+                        <div id="claimProgress" class="mt-2 hidden">
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+                                <div class="progress-bar-fill bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"></div>
+                            </div>
+                            <p class="text-xs text-gray-500 text-right" id="claimProgressText"></p>
+                        </div>
+                        <p id="claimStatus" class="status-message mt-2"></p>
                     </div>
                     <button type="submit" 
-                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200"
+                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200 relative"
                             disabled>
                         <span class="relative inline-flex items-center">
                             Upload Claim
@@ -203,9 +225,12 @@
                        id="document" 
                        accept=".pdf,.docx,.txt,.md,.json">
                 <div id="uploadProgress" class="progress-bar mt-2 hidden">
-                    <div class="progress-bar-fill" style="width: 0%"></div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+                        <div class="progress-bar-fill bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 text-right" id="uploadProgressText"></p>
                 </div>
-                <p id="uploadStatus" class="status-message"></p>
+                <p id="uploadStatus" class="status-message mt-2"></p>
             </div>
             <div>
                 <label for="processing_type" class="block text-gray-700 font-medium mb-2">Processing Type</label>
@@ -420,7 +445,9 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
     const formData = new FormData();
     const fileInput = document.getElementById('requirementsDoc');
     const progressBar = document.getElementById('requirementsProgress');
+    const progressBarText = document.getElementById('requirementsProgressText');
     const statusElement = document.getElementById('requirementsStatus');
+    const spinner = document.getElementById('requirementsSpinner');
     
     if (!fileInput.files[0]) {
         updateStatus(statusElement, 'Please select a file', 'error');
@@ -433,6 +460,7 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
     showLoading('Uploading requirements document...');
     updateProgress(progressBar, 0);
     updateStatus(statusElement, 'Uploading...', 'processing');
+    spinner.classList.remove('hidden');
     
     try {
         const response = await fetch('/upload', {
@@ -444,6 +472,7 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
         if (response.ok) {
             updateProgress(progressBar, 100);
             updateStatus(statusElement, 'Requirements document uploaded successfully', 'success');
+            progressBarText.textContent = '100%';
             setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {
@@ -456,16 +485,18 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
         updateStatus(statusElement, 'Error uploading document', 'error');
     } finally {
         hideLoading();
+        spinner.classList.add('hidden');
     }
 });
 
-// Similar handlers for claimForm and uploadForm...
 document.getElementById('claimForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
     const fileInput = document.getElementById('claimDoc');
     const progressBar = document.getElementById('claimProgress');
+    const progressBarText = document.getElementById('claimProgressText');
     const statusElement = document.getElementById('claimStatus');
+    const spinner = document.getElementById('claimSpinner');
     
     if (!fileInput.files[0]) {
         updateStatus(statusElement, 'Please select a file', 'error');
@@ -478,6 +509,7 @@ document.getElementById('claimForm').addEventListener('submit', async (e) => {
     showLoading('Uploading claim document...');
     updateProgress(progressBar, 0);
     updateStatus(statusElement, 'Uploading...', 'processing');
+    spinner.classList.remove('hidden');
     
     try {
         const response = await fetch('/upload', {
@@ -489,6 +521,7 @@ document.getElementById('claimForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             updateProgress(progressBar, 100);
             updateStatus(statusElement, 'Claim document uploaded successfully', 'success');
+            progressBarText.textContent = '100%';
             setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {
@@ -501,6 +534,7 @@ document.getElementById('claimForm').addEventListener('submit', async (e) => {
         updateStatus(statusElement, 'Error uploading document', 'error');
     } finally {
         hideLoading();
+        spinner.classList.add('hidden');
     }
 });
 
@@ -513,6 +547,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     const formatType = document.getElementById('format_type');
     const cleanup = document.getElementById('cleanup');
     const progressBar = document.getElementById('uploadProgress');
+    const progressBarText = document.getElementById('uploadProgressText');
     const statusElement = document.getElementById('uploadStatus');
     
     if (!fileInput.files[0]) {
@@ -539,6 +574,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             updateProgress(progressBar, 100);
             updateStatus(statusElement, 'Document uploaded successfully', 'success');
+            progressBarText.textContent = '100%';
             setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {

@@ -4,7 +4,8 @@ const workflowState = {
     step2Completed: false,
     requirementsDocId: null,
     claimDocId: null,
-    isUploading: false
+    isUploading: false,
+    uploadProgress: 0
 };
 
 // Initialize workflow
@@ -47,6 +48,7 @@ async function checkExistingDocuments() {
         }
     } catch (error) {
         console.error('Error checking workflow state:', error);
+        updateStatus('requirementsStatus', '❌ Error checking workflow state', 'error');
     }
 }
 
@@ -54,16 +56,34 @@ async function handleRequirementsUpload(e) {
     e.preventDefault();
     
     // Prevent double submission
-    if (workflowState.isUploading) return;
+    if (workflowState.isUploading) {
+        return;
+    }
     
     const fileInput = document.getElementById('requirementsDoc');
     const file = fileInput.files[0];
+    const submitButton = e.target.querySelector('button[type="submit"]');
     
-    // Clear previous error states
+    // Clear previous states
     updateStatus('requirementsStatus', '', 'processing');
+    resetUploadProgress();
     
     if (!file) {
-        updateStatus('requirementsStatus', 'Please select a file', 'error');
+        updateStatus('requirementsStatus', '⚠️ Please select a file', 'error');
+        return;
+    }
+
+    // Validate file size (max 16MB)
+    if (file.size > 16 * 1024 * 1024) {
+        updateStatus('requirementsStatus', '❌ File size exceeds 16MB limit', 'error');
+        return;
+    }
+
+    // Validate file type
+    const allowedTypes = ['.pdf', '.docx', '.txt', '.md', '.json'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    if (!allowedTypes.includes(fileExtension)) {
+        updateStatus('requirementsStatus', '❌ Invalid file type. Allowed types: PDF, DOCX, TXT, MD, JSON', 'error');
         return;
     }
 
@@ -73,47 +93,88 @@ async function handleRequirementsUpload(e) {
 
     try {
         workflowState.isUploading = true;
+        disableFormElements(true);
+        submitButton.disabled = true;
         
-        // Show loading state with clear message
-        showLoading('Uploading and processing requirements document...');
+        // Show initial loading state
+        showLoading('Preparing to upload requirements document...');
         updateProgressIndicator('requirementsProgress', true);
-        
+        updateStatus('requirementsStatus', '📤 Initiating upload...', 'processing');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
         const response = await fetch('/chat/upload', {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: controller.signal
         });
 
-        const data = await response.json();
-        if (response.ok) {
-            workflowState.requirementsDocId = data.document_id;
-            
-            // Update UI with success feedback
-            updateStatus('requirementsStatus', 
-                '✅ Requirements document uploaded successfully! You can now proceed to upload your claim document.', 
-                'success'
-            );
-            completeStep(1);
-            
-            // Clear file input for better UX
-            fileInput.value = '';
-            
-            // Scroll to step 2 section
-            document.getElementById('step2Section').scrollIntoView({ behavior: 'smooth' });
-        } else {
-            throw new Error(data.error || 'Upload failed');
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || `Upload failed with status: ${response.status}`);
         }
-    } catch (error) {
+
+        const data = await response.json();
+        
+        // Update workflow state and UI
+        workflowState.requirementsDocId = data.document_id;
         updateStatus('requirementsStatus', 
-            `❌ ${error.message || 'Error uploading document. Please try again.'}`, 
-            'error'
+            '✅ Requirements document uploaded successfully! You can now proceed to upload your claim document.', 
+            'success'
         );
-        // Reset step 1 state
+        completeStep(1);
+        
+        // Clear file input and reset progress
+        fileInput.value = '';
+        resetUploadProgress();
+        
+        // Smooth scroll to next section
+        document.getElementById('step2Section').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        
+        let errorMessage = '❌ ';
+        if (error.name === 'AbortError') {
+            errorMessage += 'Upload timed out. Please try again.';
+        } else if (error.message.includes('network')) {
+            errorMessage += 'Network error. Please check your connection and try again.';
+        } else {
+            errorMessage += error.message || 'Error uploading document. Please try again.';
+        }
+        
+        updateStatus('requirementsStatus', errorMessage, 'error');
         resetStep(1);
+        
     } finally {
         workflowState.isUploading = false;
         hideLoading();
         updateProgressIndicator('requirementsProgress', false);
+        disableFormElements(false);
+        submitButton.disabled = false;
     }
+}
+
+function resetUploadProgress() {
+    workflowState.uploadProgress = 0;
+    const progressBar = document.getElementById('requirementsProgress');
+    if (progressBar) {
+        progressBar.classList.add('hidden');
+        progressBar.querySelector('.progress-bar-fill').style.width = '0%';
+    }
+}
+
+function disableFormElements(disabled) {
+    const elements = document.querySelectorAll('#requirementsForm input, #requirementsForm button');
+    elements.forEach(element => {
+        element.disabled = disabled;
+    });
 }
 
 async function handleClaimUpload(e) {
