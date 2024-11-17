@@ -9,6 +9,14 @@
                 <label for="document" class="block text-gray-700 font-medium mb-2">Upload Emergency Plans & Resources</label>
                 <input type="file" class="w-full p-2 border border-gray-300 rounded-md" id="document" accept=".pdf,.docx,.txt">
             </div>
+            <div>
+                <label for="processing_type" class="block text-gray-700 font-medium mb-2">Processing Type</label>
+                <select id="processing_type" name="processing_type" class="w-full p-2 border border-gray-300 rounded-md">
+                    <option value="text">Text Extraction</option>
+                    <option value="summary">Document Summary</option>
+                    <option value="analysis">Document Analysis</option>
+                </select>
+            </div>
             <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Upload</button>
         </form>
     </div>
@@ -19,7 +27,27 @@
             {% for document in documents %}
             <div class="p-4 border border-gray-200 rounded-lg">
                 <h3 class="font-medium">{{ document.filename }}</h3>
-                <p class="text-gray-600 text-sm">Uploaded on {{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p class="text-gray-600 text-sm">Uploaded on {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p class="text-gray-600 text-sm">Processing Type: {{ document.processing_type }}</p>
+                <p class="text-gray-600 text-sm">Status: 
+                    <span class="
+                        {% if document.processing_status == 'completed' %}text-green-600
+                        {% elif document.processing_status == 'failed' %}text-red-600
+                        {% else %}text-yellow-600{% endif %}
+                    ">
+                        {{ document.processing_status }}
+                    </span>
+                </p>
+                {% if document.processed_content %}
+                <div class="mt-2">
+                    <button onclick="toggleContent('{{ document.id }}')" class="text-blue-600 hover:text-blue-800">
+                        Show/Hide Processed Content
+                    </button>
+                    <div id="content-{{ document.id }}" class="hidden mt-2 p-2 bg-gray-50 rounded">
+                        <pre class="whitespace-pre-wrap">{{ document.processed_content | tojson(indent=2) }}</pre>
+                    </div>
+                </div>
+                {% endif %}
             </div>
             {% else %}
             <p class="text-gray-600">No documents uploaded yet.</p>
@@ -27,4 +55,43 @@
         </div>
     </div>
 </div>
+
+<script>
+function toggleContent(id) {
+    const content = document.getElementById(`content-${id}`);
+    content.classList.toggle('hidden');
+}
+
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    const fileInput = document.getElementById('document');
+    const processingType = document.getElementById('processing_type');
+    
+    if (!fileInput.files[0]) {
+        alert('Please select a file');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    formData.append('processing_type', processingType.value);
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('Document uploaded successfully');
+            location.reload();
+        } else {
+            alert(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        alert('Error uploading document');
+    }
+});
+</script>
 {% endblock %}

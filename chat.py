@@ -83,7 +83,7 @@ def send_message(chat_id):
     for attempt in range(max_attempts):
         try:
             response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o",  # Using the latest model as per blueprint
                 messages=[
                     {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
                     *messages
@@ -114,6 +114,8 @@ def upload_document():
         return jsonify({'error': 'No file provided'}), 400
     
     file = request.files['file']
+    processing_type = request.form.get('processing_type', 'text')
+    
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
@@ -123,17 +125,38 @@ def upload_document():
     file.seek(0)  # Reset file pointer after reading
 
     try:
-        content = process_document(file)
+        # Create document with pending status
         document = Document(
             user_id=current_user.id,
             filename=file.filename,
-            content=content
+            content='',  # Will be updated after processing
+            processing_type=processing_type,
+            processing_status='pending'
         )
         db.session.add(document)
         db.session.commit()
-        return jsonify({'message': 'Document uploaded successfully'})
+
+        # Process the document
+        processed_result = process_document(file, processing_type)
+        
+        # Update document with processed content
+        document.content = processed_result.get('raw_text', '')
+        document.processed_content = processed_result
+        document.processing_status = 'completed'
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Document uploaded and processed successfully',
+            'document_id': document.id
+        })
     except ValueError as e:
+        if document.id:
+            document.processing_status = 'failed'
+            db.session.commit()
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        if document.id:
+            document.processing_status = 'failed'
+            db.session.commit()
         db.session.rollback()
         return jsonify({'error': f'Error processing document: {str(e)}'}), 500

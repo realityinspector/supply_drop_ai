@@ -36,3 +36,6 @@ class Document(db.Model):
     filename = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processing_type = db.Column(db.String(50), nullable=False, default='text')  # text, summary, analysis
+    processed_content = db.Column(db.JSON)  # Store processed results as JSON
+    processing_status = db.Column(db.String(20), nullable=False, default='pending')  # pending, completed, failed
