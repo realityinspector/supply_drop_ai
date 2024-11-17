@@ -1,10 +1,11 @@
 import os
+import json
 from openai import OpenAI
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
 from app import db
-from models import Chat, Message, Document
-from document_processor import process_document
+from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
+from document_processor import process_document, analyze_insurance_claim
 import time
 
 chat_bp = Blueprint('chat', __name__)
@@ -29,7 +30,12 @@ def chat_page():
 @login_required
 def documents():
     documents = Document.query.filter_by(user_id=current_user.id).all()
-    return render_template('documents.html', documents=documents)
+    requirements = InsuranceRequirement.query.filter_by(user_id=current_user.id).all()
+    claims = InsuranceClaim.query.filter_by(user_id=current_user.id).all()
+    return render_template('documents.html', 
+                         documents=documents,
+                         requirements=requirements,
+                         claims=claims)
 
 @chat_bp.route('/checklists')
 @login_required
@@ -40,7 +46,7 @@ def checklists():
 @login_required
 def new_chat():
     try:
-        chat = Chat(user_id=current_user.id, title="New Chat")
+        chat = Chat(user_id=current_user.id)
         db.session.add(chat)
         db.session.commit()
         return jsonify({'chat_id': chat.id})
@@ -65,7 +71,11 @@ def send_message(chat_id):
     if chat.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
 
-    content = request.json.get('message')
+    if not request.is_json:
+        return jsonify({'error': 'Invalid request format'}), 400
+
+    data = request.get_json()
+    content = data.get('message') if data else None
     if not content:
         return jsonify({'error': 'Message cannot be empty'}), 400
 
@@ -75,18 +85,19 @@ def send_message(chat_id):
     db.session.commit()
 
     # Get chat context
-    messages = [{"role": msg.role, "content": msg.content} 
-                for msg in chat.messages[-5:]]  # Last 5 messages for context
+    context_messages = [{"role": msg.role, "content": msg.content} 
+                       for msg in chat.messages[-5:]]  # Last 5 messages for context
 
     # Call OpenAI API with exponential backoff
     max_attempts = 5
+    assistant_content = None
     for attempt in range(max_attempts):
         try:
             response = client.chat.completions.create(
                 model="gpt-4o",  # Using the latest model as per blueprint
                 messages=[
                     {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
-                    *messages
+                    *context_messages
                 ],
                 temperature=0.7,
                 max_tokens=1000
@@ -98,14 +109,17 @@ def send_message(chat_id):
                 return jsonify({'error': f'Failed to get response: {str(e)}'}), 500
             exponential_backoff(attempt)
 
-    # Save assistant message
-    assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
-    db.session.add(assistant_message)
-    db.session.commit()
+    if assistant_content:
+        # Save assistant message
+        assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
+        db.session.add(assistant_message)
+        db.session.commit()
 
-    return jsonify({
-        'message': assistant_content
-    })
+        return jsonify({
+            'message': assistant_content
+        })
+    
+    return jsonify({'error': 'Failed to generate response'}), 500
 
 @chat_bp.route('/upload', methods=['POST'])
 @login_required
@@ -141,8 +155,7 @@ def upload_document():
             user_id=current_user.id,
             filename=file.filename,
             content='',  # Will be updated after processing
-            processing_type=processing_type,
-            processing_status='pending'
+            processing_type=processing_type
         )
         db.session.add(document)
         db.session.commit()
@@ -154,12 +167,28 @@ def upload_document():
         document.content = processed_result.get('raw_text', '')
         document.processed_content = processed_result
         document.processing_status = 'completed'
+
+        # If this is an insurance requirements document, create requirement records
+        if processing_type == 'insurance_requirements' and isinstance(processed_result, dict):
+            requirements = processed_result.get('requirements', [])
+            for req in requirements:
+                if isinstance(req, dict):
+                    requirement = InsuranceRequirement(
+                        user_id=current_user.id,
+                        document_id=document.id,
+                        requirement_text=req.get('requirement_text', ''),
+                        category=req.get('category'),
+                        priority=req.get('priority')
+                    )
+                    db.session.add(requirement)
+
         db.session.commit()
 
         return jsonify({
             'message': 'Document uploaded and processed successfully',
             'document_id': document.id
         })
+
     except ValueError as e:
         if document.id:
             document.processing_status = 'failed'
@@ -171,3 +200,69 @@ def upload_document():
             db.session.commit()
         db.session.rollback()
         return jsonify({'error': f'Error processing document: {str(e)}'}), 500
+
+@chat_bp.route('/insurance-analysis', methods=['POST'])
+@login_required
+def analyze_insurance():
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Invalid request format'}), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        claim_doc_id = data.get('claim_document_id')
+        req_doc_id = data.get('requirement_document_id')
+        analysis_type = data.get('analysis_type')
+
+        if not all([claim_doc_id, req_doc_id, analysis_type]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+
+        # Verify document ownership and access
+        claim_doc = Document.query.get_or_404(claim_doc_id)
+        req_doc = Document.query.get_or_404(req_doc_id)
+        
+        if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized access'}), 403
+
+        # Create a new chat for the analysis
+        chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {analysis_type}")
+        db.session.add(chat)
+
+        # Analyze the claim
+        analysis_result = analyze_insurance_claim(
+            claim_doc.content,
+            req_doc.content,
+            analysis_type
+        )
+
+        # Create a claim record
+        claim = InsuranceClaim(
+            user_id=current_user.id,
+            requirement_id=req_doc_id,
+            document_id=claim_doc_id,
+            analysis_type=analysis_type,
+            analysis_result=analysis_result
+        )
+        db.session.add(claim)
+
+        # Add the analysis result as a message in the chat
+        message = Message(
+            chat_id=chat.id,
+            content=json.dumps(analysis_result, indent=2),
+            role='assistant'
+        )
+        db.session.add(message)
+        
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Analysis completed successfully',
+            'chat_id': chat.id,
+            'analysis_result': analysis_result
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
