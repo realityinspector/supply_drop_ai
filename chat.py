@@ -119,6 +119,17 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
+    # Check for duplicate document
+    existing_document = Document.query.filter_by(
+        user_id=current_user.id,
+        filename=file.filename
+    ).first()
+    
+    if existing_document:
+        return jsonify({
+            'error': 'A document with this name already exists'
+        }), 409
+
     # Check file size
     if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
         return jsonify({'error': 'File size exceeds 16MB limit'}), 400
