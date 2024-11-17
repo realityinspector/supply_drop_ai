@@ -248,20 +248,31 @@ function validateDocumentSelection() {
 }
 
 async function analyzeDocuments(analysisType) {
+    // Reset status messages
+    updateStatus(document.getElementById('analysisStatus'), '', 'processing');
+    
+    // Validate document selection
     if (!validateDocumentSelection()) return;
 
-    showLoading('Analyzing documents...');
-    updateStatus(document.getElementById('analysisStatus'), 'Starting analysis...', 'processing');
-
-    const selectedDocs = document.querySelectorAll('.document-select:checked');
-    const requirementsDoc = Array.from(selectedDocs).find(
-        checkbox => checkbox.dataset.type === 'insurance_requirements'
-    );
-    const claimDoc = Array.from(selectedDocs).find(
-        checkbox => checkbox.dataset.type !== 'insurance_requirements'
-    );
-
+    // Show loading state
+    showLoading('Starting document analysis...');
+    const analysisStatusElement = document.getElementById('analysisStatus');
+    
     try {
+        // Update status
+        updateStatus(analysisStatusElement, 'Preparing documents for analysis...', 'processing');
+        
+        const selectedDocs = document.querySelectorAll('.document-select:checked');
+        const requirementsDoc = Array.from(selectedDocs).find(
+            checkbox => checkbox.dataset.type === 'insurance_requirements'
+        );
+        const claimDoc = Array.from(selectedDocs).find(
+            checkbox => checkbox.dataset.type !== 'insurance_requirements'
+        );
+
+        // Update status
+        updateStatus(analysisStatusElement, 'Sending analysis request...', 'processing');
+
         const response = await fetch('/insurance-analysis', {
             method: 'POST',
             headers: {
@@ -275,17 +286,32 @@ async function analyzeDocuments(analysisType) {
         });
 
         const data = await response.json();
-        if (response.ok) {
-            updateStatus(document.getElementById('analysisStatus'), 'Analysis completed successfully', 'success');
-            // Redirect to chat interface with the new chat session
-            window.location.href = `/chat?chat_id=${data.chat_id}`;
-        } else {
-            showError(data.error || 'Analysis failed');
+
+        if (!response.ok) {
+            throw new Error(data.error || data.details || 'Analysis failed');
         }
+
+        // Update status before redirect
+        updateStatus(analysisStatusElement, 'Analysis completed successfully! Redirecting to chat...', 'success');
+        
+        // Delay redirect slightly to show success message
+        setTimeout(() => {
+            window.location.href = `/chat?chat_id=${data.chat_id}`;
+        }, 1500);
+
     } catch (error) {
-        showError('Error performing analysis');
+        console.error('Analysis error:', error);
+        updateStatus(
+            analysisStatusElement,
+            `Error: ${error.message || 'Failed to complete analysis'}`,
+            'error'
+        );
     } finally {
-        hideLoading();
+        // Delay hiding loading state if there was an error
+        // Keep it visible if success (will be hidden by redirect)
+        if (analysisStatusElement.classList.contains('status-error')) {
+            setTimeout(() => hideLoading(), 1000);
+        }
     }
 }
 

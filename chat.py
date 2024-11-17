@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from openai import OpenAI
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_required, current_user
@@ -7,6 +8,10 @@ from app import db
 from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
 from document_processor import process_document, analyze_insurance_claim
 import time
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint('chat', __name__)
 client = OpenAI()  # This will use OPENAI_API_KEY from env
@@ -23,8 +28,9 @@ def index():
 @chat_bp.route('/chat')
 @login_required
 def chat_page():
+    chat_id = request.args.get('chat_id')
     chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
-    return render_template('chat.html', chats=chats)
+    return render_template('chat.html', chats=chats, active_chat_id=chat_id)
 
 @chat_bp.route('/documents')
 @login_required
@@ -51,75 +57,86 @@ def new_chat():
         db.session.commit()
         return jsonify({'chat_id': chat.id})
     except Exception as e:
+        logger.error(f"Error creating new chat: {str(e)}")
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/chat/<int:chat_id>/messages')
 @login_required
 def get_chat_messages(chat_id):
-    chat = Chat.query.get_or_404(chat_id)
-    if chat.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    messages = [{'role': msg.role, 'content': msg.content} for msg in chat.messages]
-    return jsonify({'messages': messages})
+    try:
+        chat = Chat.query.get_or_404(chat_id)
+        if chat.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        messages = [{'role': msg.role, 'content': msg.content} for msg in chat.messages]
+        return jsonify({'messages': messages})
+    except Exception as e:
+        logger.error(f"Error fetching chat messages: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/chat/<int:chat_id>/message', methods=['POST'])
 @login_required
 def send_message(chat_id):
-    chat = Chat.query.get_or_404(chat_id)
-    if chat.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        chat = Chat.query.get_or_404(chat_id)
+        if chat.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
 
-    if not request.is_json:
-        return jsonify({'error': 'Invalid request format'}), 400
+        if not request.is_json:
+            return jsonify({'error': 'Invalid request format'}), 400
 
-    data = request.get_json()
-    content = data.get('message') if data else None
-    if not content:
-        return jsonify({'error': 'Message cannot be empty'}), 400
+        data = request.get_json()
+        content = data.get('message') if data else None
+        if not content:
+            return jsonify({'error': 'Message cannot be empty'}), 400
 
-    # Save user message
-    user_message = Message(chat_id=chat_id, content=content, role='user')
-    db.session.add(user_message)
-    db.session.commit()
-
-    # Get chat context
-    context_messages = [{"role": msg.role, "content": msg.content} 
-                       for msg in chat.messages[-5:]]  # Last 5 messages for context
-
-    # Call OpenAI API with exponential backoff
-    max_attempts = 5
-    assistant_content = None
-    for attempt in range(max_attempts):
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o",  # Using the latest model as per blueprint
-                messages=[
-                    {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
-                    *context_messages
-                ],
-                temperature=0.7,
-                max_tokens=1000
-            )
-            assistant_content = response.choices[0].message.content
-            break
-        except Exception as e:
-            if attempt == max_attempts - 1:
-                return jsonify({'error': f'Failed to get response: {str(e)}'}), 500
-            exponential_backoff(attempt)
-
-    if assistant_content:
-        # Save assistant message
-        assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
-        db.session.add(assistant_message)
+        # Save user message
+        user_message = Message(chat_id=chat_id, content=content, role='user')
+        db.session.add(user_message)
         db.session.commit()
 
-        return jsonify({
-            'message': assistant_content
-        })
-    
-    return jsonify({'error': 'Failed to generate response'}), 500
+        # Get chat context
+        context_messages = [{"role": msg.role, "content": msg.content} 
+                          for msg in chat.messages[-5:]]  # Last 5 messages for context
+
+        # Call OpenAI API with exponential backoff
+        max_attempts = 5
+        assistant_content = None
+        for attempt in range(max_attempts):
+            try:
+                response = client.chat.completions.create(
+                    model="gpt-4o",  # Using the latest model as per blueprint
+                    messages=[
+                        {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
+                        *context_messages
+                    ],
+                    temperature=0.7,
+                    max_tokens=1000
+                )
+                assistant_content = response.choices[0].message.content
+                break
+            except Exception as e:
+                logger.error(f"OpenAI API error (attempt {attempt + 1}): {str(e)}")
+                if attempt == max_attempts - 1:
+                    return jsonify({'error': f'Failed to get response: {str(e)}'}), 500
+                exponential_backoff(attempt)
+
+        if assistant_content:
+            # Save assistant message
+            assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
+            db.session.add(assistant_message)
+            db.session.commit()
+
+            return jsonify({
+                'message': assistant_content
+            })
+        
+        return jsonify({'error': 'Failed to generate response'}), 500
+    except Exception as e:
+        logger.error(f"Error in send_message: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/upload', methods=['POST'])
 @login_required
@@ -133,23 +150,23 @@ def upload_document():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
-    # Check for duplicate document
-    existing_document = Document.query.filter_by(
-        user_id=current_user.id,
-        filename=file.filename
-    ).first()
-    
-    if existing_document:
-        return jsonify({
-            'error': 'A document with this name already exists'
-        }), 409
-
-    # Check file size
-    if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
-        return jsonify({'error': 'File size exceeds 16MB limit'}), 400
-    file.seek(0)  # Reset file pointer after reading
-
     try:
+        # Check for duplicate document
+        existing_document = Document.query.filter_by(
+            user_id=current_user.id,
+            filename=file.filename
+        ).first()
+        
+        if existing_document:
+            return jsonify({
+                'error': 'A document with this name already exists'
+            }), 409
+
+        # Check file size
+        if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
+            return jsonify({'error': 'File size exceeds 16MB limit'}), 400
+        file.seek(0)  # Reset file pointer after reading
+
         # Create document with pending status
         document = Document(
             user_id=current_user.id,
@@ -183,6 +200,7 @@ def upload_document():
                     db.session.add(requirement)
 
         db.session.commit()
+        logger.info(f"Document uploaded successfully: {file.filename}")
 
         return jsonify({
             'message': 'Document uploaded and processed successfully',
@@ -190,11 +208,13 @@ def upload_document():
         })
 
     except ValueError as e:
+        logger.error(f"Value error processing document: {str(e)}")
         if document.id:
             document.processing_status = 'failed'
             db.session.commit()
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        logger.error(f"Error processing document: {str(e)}")
         if document.id:
             document.processing_status = 'failed'
             db.session.commit()
@@ -216,6 +236,8 @@ def analyze_insurance():
         req_doc_id = data.get('requirement_document_id')
         analysis_type = data.get('analysis_type')
 
+        logger.info(f"Starting insurance analysis - Type: {analysis_type}, Claim Doc: {claim_doc_id}, Req Doc: {req_doc_id}")
+
         if not all([claim_doc_id, req_doc_id, analysis_type]):
             return jsonify({'error': 'Missing required parameters'}), 400
 
@@ -224,6 +246,7 @@ def analyze_insurance():
         req_doc = Document.query.get_or_404(req_doc_id)
         
         if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
+            logger.warning(f"Unauthorized access attempt - User: {current_user.id}, Claim Doc: {claim_doc_id}, Req Doc: {req_doc_id}")
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Create a new chat for the analysis
@@ -231,6 +254,7 @@ def analyze_insurance():
         db.session.add(chat)
 
         # Analyze the claim
+        logger.info(f"Processing analysis for chat {chat.id}")
         analysis_result = analyze_insurance_claim(
             claim_doc.content,
             req_doc.content,
@@ -256,13 +280,19 @@ def analyze_insurance():
         db.session.add(message)
         
         db.session.commit()
+        logger.info(f"Analysis completed successfully - Chat ID: {chat.id}, Claim ID: {claim.id}")
 
         return jsonify({
             'message': 'Analysis completed successfully',
             'chat_id': chat.id,
+            'claim_id': claim.id,
             'analysis_result': analysis_result
         })
 
     except Exception as e:
+        logger.error(f"Error in insurance analysis: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': str(e),
+            'details': 'An error occurred during analysis. Please try again.'
+        }), 500
