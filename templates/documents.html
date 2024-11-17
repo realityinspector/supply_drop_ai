@@ -13,10 +13,37 @@
     <!-- Insurance Document Processing Section -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <h2 class="text-2xl font-bold mb-4">Insurance Document Processing</h2>
+        
+        <!-- Workflow Progress Bar -->
+        <div class="mb-8">
+            <div class="flex justify-between mb-2">
+                <div class="flex flex-col items-center w-1/3">
+                    <div id="step1Indicator" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold mb-2">1</div>
+                    <span class="text-sm text-center">Upload Requirements</span>
+                </div>
+                <div class="flex flex-col items-center w-1/3">
+                    <div id="step2Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2">2</div>
+                    <span class="text-sm text-center">Upload Claim</span>
+                </div>
+                <div class="flex flex-col items-center w-1/3">
+                    <div id="step3Indicator" class="w-8 h-8 rounded-full bg-gray-300 text-white flex items-center justify-center font-bold mb-2">3</div>
+                    <span class="text-sm text-center">Analysis</span>
+                </div>
+            </div>
+            <div class="relative pt-1">
+                <div class="flex mb-2 items-center justify-between">
+                    <div class="w-full bg-gray-200 rounded-full">
+                        <div id="progressBar" class="w-1/3 h-2 rounded-full bg-blue-600 transition-all duration-500"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="space-y-6">
             <!-- Step 1: Insurance Requirements Upload -->
-            <div class="border-b pb-6">
+            <div id="step1Section" class="border-b pb-6">
                 <h3 class="text-lg font-semibold mb-3">Step 1: Upload Insurance Requirements and Policy</h3>
+                <p id="step1Guidance" class="text-sm text-gray-600 mb-4">Please upload your insurance requirements document to begin the process.</p>
                 <form id="requirementsForm" class="space-y-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Select Requirements Document</label>
@@ -40,22 +67,25 @@
             </div>
 
             <!-- Step 2: Insurance Claim Upload -->
-            <div class="border-b pb-6">
+            <div id="step2Section" class="border-b pb-6 opacity-50">
                 <h3 class="text-lg font-semibold mb-3">Step 2: Upload Insurance Claim/Application</h3>
+                <p id="step2Guidance" class="text-sm text-gray-600 mb-4">Complete Step 1 to unlock this step.</p>
                 <form id="claimForm" class="space-y-4">
                     <div>
                         <label class="block text-gray-700 font-medium mb-2">Select Claim Document</label>
                         <input type="file" 
                                class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
                                id="claimDoc" 
-                               accept=".pdf,.docx,.txt,.md,.json">
+                               accept=".pdf,.docx,.txt,.md,.json"
+                               disabled>
                         <div id="claimProgress" class="progress-bar mt-2 hidden">
                             <div class="progress-bar-fill" style="width: 0%"></div>
                         </div>
                         <p id="claimStatus" class="status-message"></p>
                     </div>
                     <button type="submit" 
-                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200">
+                            class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200"
+                            disabled>
                         <span class="relative inline-flex items-center">
                             Upload Claim
                             <span class="absolute right-0 -mr-1 h-4 w-4 animate-ping rounded-full bg-white opacity-75 hidden"></span>
@@ -65,11 +95,13 @@
             </div>
 
             <!-- Step 3: Analysis Options -->
-            <div>
+            <div id="step3Section" class="opacity-50">
                 <h3 class="text-lg font-semibold mb-4">Step 3: Analysis Options</h3>
+                <p id="step3Guidance" class="text-sm text-gray-600 mb-4">Complete Steps 1 and 2 to unlock analysis options.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <button onclick="analyzeDocuments('critique')" 
-                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed">
+                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
+                            disabled>
                         <span class="relative z-10 flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -79,7 +111,8 @@
                         <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
                     </button>
                     <button onclick="analyzeDocuments('enhance')" 
-                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed">
+                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
+                            disabled>
                         <span class="relative z-10 flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -89,7 +122,8 @@
                         <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
                     </button>
                     <button onclick="analyzeDocuments('formalize')" 
-                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed">
+                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
+                            disabled>
                         <span class="relative z-10 flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -99,7 +133,8 @@
                         <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-200"></div>
                     </button>
                     <button onclick="analyzeDocuments('grammar')" 
-                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed">
+                            class="analysis-btn btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200 disabled:transform-none disabled:cursor-not-allowed"
+                            disabled>
                         <span class="relative z-10 flex items-center justify-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>

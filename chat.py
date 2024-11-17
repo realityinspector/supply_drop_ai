@@ -309,3 +309,108 @@ def analyze_insurance():
             'error': str(e),
             'details': 'An error occurred during analysis. Please try again.'
         }), 500
+
+@chat_bp.route('/workflow-state')
+@login_required
+def get_workflow_state():
+    """Get the current state of the insurance document workflow."""
+    try:
+        # Find the most recent insurance requirements document
+        requirements_doc = Document.query.filter_by(
+            user_id=current_user.id,
+            processing_type='insurance_requirements',
+            processing_status='completed'
+        ).order_by(Document.uploaded_at.desc()).first()
+
+        # Find the most recent insurance claim document
+        claim_doc = Document.query.filter_by(
+            user_id=current_user.id,
+            processing_type='insurance_claim',
+            processing_status='completed'
+        ).order_by(Document.uploaded_at.desc()).first()
+
+        return jsonify({
+            'requirements_doc_id': requirements_doc.id if requirements_doc else None,
+            'claim_doc_id': claim_doc.id if claim_doc else None
+        })
+    except Exception as e:
+        logger.error(f"Error getting workflow state: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@chat_bp.route('/upload-claim', methods=['POST'])
+@login_required
+def upload_claim():
+    """Upload a claim document with validation against requirements."""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        requirements_doc_id = request.form.get('requirements_doc_id')
+        
+        if not requirements_doc_id:
+            return jsonify({'error': 'Requirements document ID is required'}), 400
+        
+        # Verify requirements document exists and belongs to user
+        requirements_doc = Document.query.filter_by(
+            id=requirements_doc_id,
+            user_id=current_user.id,
+            processing_type='insurance_requirements',
+            processing_status='completed'
+        ).first()
+        
+        if not requirements_doc:
+            return jsonify({'error': 'Valid requirements document not found'}), 404
+
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Check for duplicate document
+        existing_document = Document.query.filter_by(
+            user_id=current_user.id,
+            filename=file.filename
+        ).first()
+        
+        if existing_document:
+            return jsonify({
+                'error': 'A document with this name already exists'
+            }), 409
+
+        # Check file size
+        if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
+            return jsonify({'error': 'File size exceeds 16MB limit'}), 400
+        file.seek(0)  # Reset file pointer after reading
+
+        # Create document with pending status
+        document = Document(
+            user_id=current_user.id,
+            filename=file.filename,
+            content='',
+            processing_type='insurance_claim'
+        )
+        db.session.add(document)
+        db.session.commit()
+
+        # Process the document
+        processed_result = process_document(file, 'text')  # Use basic text processing for claims
+        
+        # Update document with processed content
+        document.content = processed_result.get('raw_text', '')
+        document.processed_content = processed_result
+        document.processing_status = 'completed'
+        
+        db.session.commit()
+        logger.info(f"Claim document uploaded successfully: {file.filename}")
+
+        return jsonify({
+            'message': 'Claim document uploaded and processed successfully',
+            'document_id': document.id
+        })
+
+    except ValueError as e:
+        logger.error(f"Value error processing claim document: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error processing claim document: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': f'Error processing document: {str(e)}'}), 500
