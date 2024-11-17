@@ -5,48 +5,69 @@
     </a>
     
     <div class="hidden md:flex items-center space-x-8">
-        <a href="{{ url_for('chat.chat_page') }}" class="text-gray-300 hover:text-white transition-colors">Chat</a>
-        <a href="{{ url_for('chat.documents') }}" class="text-gray-300 hover:text-white transition-colors">Documents</a>
-        <a href="{{ url_for('chat.checklists') }}" class="text-gray-300 hover:text-white transition-colors">Checklists</a>
+        {% set nav_links = [
+            ('chat.chat_page', 'Chat'),
+            ('chat.documents', 'Documents'),
+            ('chat.checklists', 'Checklists')
+        ] %}
+        
+        {% for endpoint, label in nav_links %}
+            <a href="{{ url_for(endpoint) }}" 
+               class="text-gray-300 hover:text-white transition-all duration-200 ease-in-out {% if request.endpoint == endpoint %}text-white font-medium{% endif %}"
+               {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
+               >{{ label }}</a>
+        {% endfor %}
     
         {% if current_user.is_authenticated %}
             <span class="text-gray-300">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}" 
-               class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+               class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                 Logout
             </a>
         {% else %}
-            <a href="{{ url_for('auth.login') }}" class="text-gray-300 hover:text-white transition-colors">Login</a>
+            <a href="{{ url_for('auth.login') }}" 
+               class="text-gray-300 hover:text-white transition-all duration-200 ease-in-out">Login</a>
             <a href="{{ url_for('auth.signup') }}" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800">
                 Sign Up
             </a>
         {% endif %}
     </div>
 
     <!-- Mobile menu button -->
-    <div class="md:hidden">
-        <button type="button" class="text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
-            <span class="sr-only">Open main menu</span>
-            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-        </button>
-    </div>
+    <button id="mobile-menu-button" 
+            type="button" 
+            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-colors duration-200"
+            aria-controls="mobile-menu"
+            aria-expanded="false">
+        <span class="sr-only">Open main menu</span>
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+    </button>
 </div>
 
 <!-- Mobile menu -->
-<div class="md:hidden">
+<div id="mobile-menu" 
+     class="fixed inset-y-0 right-0 w-64 bg-gray-800 md:hidden transform translate-x-full transition-transform duration-300 ease-in-out z-50 shadow-lg"
+     aria-labelledby="mobile-menu-button">
     <div class="px-2 pt-2 pb-3 space-y-1">
-        <a href="{{ url_for('chat.chat_page') }}" class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700">Chat</a>
-        <a href="{{ url_for('chat.documents') }}" class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700">Documents</a>
-        <a href="{{ url_for('chat.checklists') }}" class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700">Checklists</a>
+        {% for endpoint, label in nav_links %}
+            <a href="{{ url_for(endpoint) }}" 
+               class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-all duration-200 ease-in-out {% if request.endpoint == endpoint %}bg-gray-700 text-white{% endif %}"
+               {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
+               >{{ label }}</a>
+        {% endfor %}
+        
         {% if current_user.is_authenticated %}
             <span class="block px-3 py-2 text-gray-300">{{ current_user.username }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="block px-3 py-2 rounded-md text-white bg-red-600 hover:bg-red-700">Logout</a>
+            <a href="{{ url_for('auth.logout') }}" 
+               class="block px-3 py-2 rounded-md text-white bg-red-600 hover:bg-red-700 transition-all duration-200 ease-in-out">Logout</a>
         {% else %}
-            <a href="{{ url_for('auth.login') }}" class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700">Login</a>
-            <a href="{{ url_for('auth.signup') }}" class="block px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700">Sign Up</a>
+            <a href="{{ url_for('auth.login') }}" 
+               class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-all duration-200 ease-in-out">Login</a>
+            <a href="{{ url_for('auth.signup') }}" 
+               class="block px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-all duration-200 ease-in-out">Sign Up</a>
         {% endif %}
     </div>
 </div>
