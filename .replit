@@ -32,7 +32,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 main.py"
-waitForPort = 3000
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Tailwind CSS Build"
@@ -63,6 +63,14 @@ externalPort = 3002
 [[ports]]
 localPort = 3002
 externalPort = 3003
+
+[[ports]]
+localPort = 3003
+externalPort = 4200
+
+[[ports]]
+localPort = 4200
+externalPort = 5000
 
 [[ports]]
 localPort = 5000

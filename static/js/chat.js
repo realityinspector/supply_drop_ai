@@ -1,7 +1,8 @@
 // Chat functionality
 const chatState = {
     currentChatId: null,
-    isProcessing: false
+    isProcessing: false,
+    isSidebarCollapsed: false
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,6 +10,34 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageForm = document.getElementById('messageForm');
     const messageInput = document.getElementById('messageInput');
     const chatMessages = document.getElementById('chatMessages');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarRestore = document.getElementById('sidebarRestore');
+
+    // Sidebar toggle functionality
+    sidebarToggle?.addEventListener('click', () => {
+        toggleSidebar(true);
+    });
+
+    // Sidebar restore functionality
+    sidebarRestore?.addEventListener('click', () => {
+        toggleSidebar(false);
+    });
+
+    function toggleSidebar(collapse) {
+        chatState.isSidebarCollapsed = collapse;
+        
+        // Toggle sidebar visibility
+        sidebar.style.transform = collapse ? 'translateX(-256px)' : 'translateX(0)';
+        
+        // Toggle button visibility
+        if (sidebarToggle) sidebarToggle.style.display = collapse ? 'none' : 'block';
+        if (sidebarRestore) sidebarRestore.style.display = collapse ? 'block' : 'none';
+        
+        // Update transition
+        sidebar.style.transition = 'transform 300ms ease-in-out';
+        if (sidebarRestore) sidebarRestore.style.transition = 'opacity 300ms ease-in-out';
+    }
 
     // New chat handling
     const newChatButton = document.getElementById('newChat');
@@ -81,10 +110,16 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Chat selection handling
-    document.querySelectorAll('[data-chat-id]').forEach(element => {
+    const chatItems = document.querySelectorAll('[data-chat-id]');
+    chatItems.forEach(element => {
         element.addEventListener('click', async (e) => {
             e.preventDefault();
             if (chatState.isProcessing) return;
+            
+            // Remove active state from all chats
+            chatItems.forEach(item => item.classList.remove('bg-gray-100'));
+            // Add active state to clicked chat
+            element.classList.add('bg-gray-100');
             
             const chatId = element.dataset.chatId;
             if (chatState.currentChatId === chatId) return;
@@ -110,6 +145,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Auto-select first chat on page load
+    const firstChat = document.querySelector('[data-chat-id]');
+    if (firstChat) {
+        firstChat.click();
+    }
 });
 
 function appendMessage(role, content) {
