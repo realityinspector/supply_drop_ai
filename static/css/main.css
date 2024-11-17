@@ -9,11 +9,11 @@
     }
 
     .btn-primary {
-        @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-lg hover:shadow-xl;
+        @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600;
     }
 
     .btn-danger {
-        @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-lg hover:shadow-xl;
+        @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600;
     }
 
     .input {
@@ -30,6 +30,52 @@
 
     .nav-link-active {
         @apply text-white font-medium;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+        @apply fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 transition-opacity duration-300;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .loading-overlay.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .loading-spinner {
+        @apply animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent;
+    }
+
+    .loading-text {
+        @apply mt-4 text-white font-medium text-lg;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+        @apply w-full h-2 bg-gray-200 rounded-full overflow-hidden transition-all duration-300;
+    }
+
+    .progress-bar-fill {
+        @apply h-full bg-blue-500 transition-all duration-300 ease-out;
+    }
+
+    /* Status message */
+    .status-message {
+        @apply mt-2 text-sm transition-all duration-300;
+    }
+
+    .status-success {
+        @apply text-green-600;
+    }
+
+    .status-error {
+        @apply text-red-600;
+    }
+
+    .status-processing {
+        @apply text-blue-600;
     }
 }
 
@@ -79,41 +125,16 @@
     @apply h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-colors duration-200;
 }
 
-/* Layout components */
-.page-container {
-    @apply min-h-screen bg-gray-100 flex flex-col;
+/* Button states */
+.btn[disabled] {
+    @apply opacity-50 cursor-not-allowed;
 }
 
-.main-content {
-    @apply flex-1 py-6;
+.btn-processing {
+    @apply relative pl-8;
 }
 
-.section-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-}
-
-/* Navigation styles */
-.nav-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-}
-
-.mobile-menu {
-    @apply fixed inset-y-0 right-0 w-64 bg-gray-800 transform transition-transform duration-300 ease-in-out z-50 shadow-xl border-l border-gray-700;
-}
-
-/* Mobile menu transitions */
-.mobile-menu-enter {
-    @apply transform translate-x-full;
-}
-
-.mobile-menu-enter-active {
-    @apply transform translate-x-0 transition-transform duration-300 ease-in-out;
-}
-
-.mobile-menu-exit {
-    @apply transform translate-x-0;
-}
-
-.mobile-menu-exit-active {
-    @apply transform translate-x-full transition-transform duration-300 ease-in-out;
+.btn-processing:before {
+    content: "";
+    @apply absolute left-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin;
 }

@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="text-center">
+        <div class="loading-spinner"></div>
+        <p id="loadingText" class="loading-text">Processing...</p>
+    </div>
+</div>
+
 <div class="max-w-6xl mx-auto">
     <!-- Insurance Document Processing Section -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -16,9 +24,12 @@
                                class="w-full p-2 border border-gray-300 rounded-md" 
                                id="requirementsDoc" 
                                accept=".pdf,.docx,.txt,.md,.json">
+                        <div id="requirementsProgress" class="progress-bar mt-2 hidden">
+                            <div class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <p id="requirementsStatus" class="status-message"></p>
                     </div>
-                    <button type="submit" 
-                            class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary">
                         Upload Requirements
                     </button>
                 </form>
@@ -34,9 +45,12 @@
                                class="w-full p-2 border border-gray-300 rounded-md" 
                                id="claimDoc" 
                                accept=".pdf,.docx,.txt,.md,.json">
+                        <div id="claimProgress" class="progress-bar mt-2 hidden">
+                            <div class="progress-bar-fill" style="width: 0%"></div>
+                        </div>
+                        <p id="claimStatus" class="status-message"></p>
                     </div>
-                    <button type="submit" 
-                            class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary">
                         Upload Claim
                     </button>
                 </form>
@@ -47,22 +61,23 @@
                 <h3 class="text-lg font-semibold mb-3">Step 3: Analysis Options</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button onclick="analyzeDocuments('critique')" 
-                            class="btn btn-primary">
+                            class="btn btn-primary analysis-btn">
                         Critique/Reject Analysis
                     </button>
                     <button onclick="analyzeDocuments('enhance')" 
-                            class="btn btn-primary">
+                            class="btn btn-primary analysis-btn">
                         Enhancement Suggestions
                     </button>
                     <button onclick="analyzeDocuments('formalize')" 
-                            class="btn btn-primary">
+                            class="btn btn-primary analysis-btn">
                         Formalize Tone
                     </button>
                     <button onclick="analyzeDocuments('grammar')" 
-                            class="btn btn-primary">
+                            class="btn btn-primary analysis-btn">
                         Spelling/Grammar Check
                     </button>
                 </div>
+                <p id="analysisStatus" class="status-message mt-4"></p>
             </div>
         </div>
     </div>
@@ -117,6 +132,10 @@
             <div>
                 <label for="document" class="block text-gray-700 font-medium mb-2">Upload Emergency Plans & Resources</label>
                 <input type="file" class="w-full p-2 border border-gray-300 rounded-md" id="document" accept=".pdf,.docx,.txt,.md,.json">
+                <div id="uploadProgress" class="progress-bar mt-2 hidden">
+                    <div class="progress-bar-fill" style="width: 0%"></div>
+                </div>
+                <p id="uploadStatus" class="status-message"></p>
             </div>
             <div>
                 <label for="processing_type" class="block text-gray-700 font-medium mb-2">Processing Type</label>
@@ -147,9 +166,45 @@
 </div>
 
 <script>
-function toggleContent(id) {
-    const content = document.getElementById(`content-${id}`);
-    content.classList.toggle('hidden');
+// Loading state management
+function showLoading(message = 'Processing...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    loadingText.textContent = message;
+    overlay.classList.add('active');
+    disableButtons();
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.classList.remove('active');
+    enableButtons();
+}
+
+function disableButtons() {
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.disabled = true;
+    });
+}
+
+function enableButtons() {
+    document.querySelectorAll('.btn').forEach(btn => {
+        btn.disabled = false;
+    });
+}
+
+function updateProgress(progressBar, progress) {
+    if (progressBar) {
+        progressBar.style.display = 'block';
+        progressBar.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+    }
+}
+
+function updateStatus(statusElement, message, type = 'processing') {
+    if (statusElement) {
+        statusElement.textContent = message;
+        statusElement.className = `status-message status-${type}`;
+    }
 }
 
 function showError(message, isConflict = false) {
@@ -168,7 +223,8 @@ function showError(message, isConflict = false) {
         }
         return false;
     } else {
-        alert(message);
+        updateStatus(document.getElementById('analysisStatus'), message, 'error');
+        hideLoading();
         return false;
     }
 }
@@ -194,8 +250,10 @@ function validateDocumentSelection() {
 async function analyzeDocuments(analysisType) {
     if (!validateDocumentSelection()) return;
 
+    showLoading('Analyzing documents...');
+    updateStatus(document.getElementById('analysisStatus'), 'Starting analysis...', 'processing');
+
     const selectedDocs = document.querySelectorAll('.document-select:checked');
-    const [doc1, doc2] = Array.from(selectedDocs);
     const requirementsDoc = Array.from(selectedDocs).find(
         checkbox => checkbox.dataset.type === 'insurance_requirements'
     );
@@ -218,13 +276,16 @@ async function analyzeDocuments(analysisType) {
 
         const data = await response.json();
         if (response.ok) {
-            alert('Analysis completed successfully');
-            location.reload();
+            updateStatus(document.getElementById('analysisStatus'), 'Analysis completed successfully', 'success');
+            // Redirect to chat interface with the new chat session
+            window.location.href = `/chat?chat_id=${data.chat_id}`;
         } else {
             showError(data.error || 'Analysis failed');
         }
     } catch (error) {
         showError('Error performing analysis');
+    } finally {
+        hideLoading();
     }
 }
 
@@ -233,14 +294,20 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
     e.preventDefault();
     const formData = new FormData();
     const fileInput = document.getElementById('requirementsDoc');
+    const progressBar = document.getElementById('requirementsProgress');
+    const statusElement = document.getElementById('requirementsStatus');
     
     if (!fileInput.files[0]) {
-        showError('Please select a file');
+        updateStatus(statusElement, 'Please select a file', 'error');
         return;
     }
     
     formData.append('file', fileInput.files[0]);
     formData.append('processing_type', 'insurance_requirements');
+    
+    showLoading('Uploading requirements document...');
+    updateProgress(progressBar, 0);
+    updateStatus(statusElement, 'Uploading...', 'processing');
     
     try {
         const response = await fetch('/upload', {
@@ -250,17 +317,20 @@ document.getElementById('requirementsForm').addEventListener('submit', async (e)
         
         const data = await response.json();
         if (response.ok) {
-            alert('Requirements document uploaded successfully');
-            location.reload();
+            updateProgress(progressBar, 100);
+            updateStatus(statusElement, 'Requirements document uploaded successfully', 'success');
+            setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {
                 e.target.dispatchEvent(new Event('submit'));
             }
         } else {
-            showError(data.error || 'Upload failed');
+            updateStatus(statusElement, data.error || 'Upload failed', 'error');
         }
     } catch (error) {
-        showError('Error uploading document');
+        updateStatus(statusElement, 'Error uploading document', 'error');
+    } finally {
+        hideLoading();
     }
 });
 
@@ -269,14 +339,20 @@ document.getElementById('claimForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
     const fileInput = document.getElementById('claimDoc');
+    const progressBar = document.getElementById('claimProgress');
+    const statusElement = document.getElementById('claimStatus');
     
     if (!fileInput.files[0]) {
-        showError('Please select a file');
+        updateStatus(statusElement, 'Please select a file', 'error');
         return;
     }
     
     formData.append('file', fileInput.files[0]);
     formData.append('processing_type', 'text');
+    
+    showLoading('Uploading claim document...');
+    updateProgress(progressBar, 0);
+    updateStatus(statusElement, 'Uploading...', 'processing');
     
     try {
         const response = await fetch('/upload', {
@@ -286,17 +362,20 @@ document.getElementById('claimForm').addEventListener('submit', async (e) => {
         
         const data = await response.json();
         if (response.ok) {
-            alert('Claim document uploaded successfully');
-            location.reload();
+            updateProgress(progressBar, 100);
+            updateStatus(statusElement, 'Claim document uploaded successfully', 'success');
+            setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {
                 e.target.dispatchEvent(new Event('submit'));
             }
         } else {
-            showError(data.error || 'Upload failed');
+            updateStatus(statusElement, data.error || 'Upload failed', 'error');
         }
     } catch (error) {
-        showError('Error uploading document');
+        updateStatus(statusElement, 'Error uploading document', 'error');
+    } finally {
+        hideLoading();
     }
 });
 
@@ -308,9 +387,11 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     const processingType = document.getElementById('processing_type');
     const formatType = document.getElementById('format_type');
     const cleanup = document.getElementById('cleanup');
+    const progressBar = document.getElementById('uploadProgress');
+    const statusElement = document.getElementById('uploadStatus');
     
     if (!fileInput.files[0]) {
-        showError('Please select a file');
+        updateStatus(statusElement, 'Please select a file', 'error');
         return;
     }
     
@@ -318,6 +399,10 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     formData.append('processing_type', processingType.value);
     formData.append('format_type', formatType.value);
     formData.append('cleanup', cleanup.checked);
+    
+    showLoading('Uploading document...');
+    updateProgress(progressBar, 0);
+    updateStatus(statusElement, 'Uploading...', 'processing');
     
     try {
         const response = await fetch('/upload', {
@@ -327,17 +412,20 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
         
         const data = await response.json();
         if (response.ok) {
-            alert('Document uploaded successfully');
-            location.reload();
+            updateProgress(progressBar, 100);
+            updateStatus(statusElement, 'Document uploaded successfully', 'success');
+            setTimeout(() => location.reload(), 1500);
         } else if (response.status === 409) {
             if (showError(data.error, true)) {
                 e.target.dispatchEvent(new Event('submit'));
             }
         } else {
-            showError(data.error || 'Upload failed');
+            updateStatus(statusElement, data.error || 'Upload failed', 'error');
         }
     } catch (error) {
-        showError('Error uploading document');
+        updateStatus(statusElement, 'Error uploading document', 'error');
+    } finally {
+        hideLoading();
     }
 });
 </script>
