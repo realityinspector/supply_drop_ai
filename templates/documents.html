@@ -1,13 +1,122 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
+<div class="max-w-6xl mx-auto">
+    <!-- Insurance Document Processing Section -->
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">Insurance Document Processing</h2>
+        <div class="space-y-6">
+            <!-- Step 1: Insurance Requirements Upload -->
+            <div class="border-b pb-6">
+                <h3 class="text-lg font-semibold mb-3">Step 1: Upload Insurance Requirements and Policy</h3>
+                <form id="requirementsForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Select Requirements Document</label>
+                        <input type="file" 
+                               class="w-full p-2 border border-gray-300 rounded-md" 
+                               id="requirementsDoc" 
+                               accept=".pdf,.docx,.txt,.md,.json">
+                    </div>
+                    <button type="submit" 
+                            class="btn btn-primary">
+                        Upload Requirements
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 2: Insurance Claim Upload -->
+            <div class="border-b pb-6">
+                <h3 class="text-lg font-semibold mb-3">Step 2: Upload Insurance Claim/Application</h3>
+                <form id="claimForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-2">Select Claim Document</label>
+                        <input type="file" 
+                               class="w-full p-2 border border-gray-300 rounded-md" 
+                               id="claimDoc" 
+                               accept=".pdf,.docx,.txt,.md,.json">
+                    </div>
+                    <button type="submit" 
+                            class="btn btn-primary">
+                        Upload Claim
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 3: Analysis Options -->
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Step 3: Analysis Options</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="analyzeDocuments('critique')" 
+                            class="btn btn-primary">
+                        Critique/Reject Analysis
+                    </button>
+                    <button onclick="analyzeDocuments('enhance')" 
+                            class="btn btn-primary">
+                        Enhancement Suggestions
+                    </button>
+                    <button onclick="analyzeDocuments('formalize')" 
+                            class="btn btn-primary">
+                        Formalize Tone
+                    </button>
+                    <button onclick="analyzeDocuments('grammar')" 
+                            class="btn btn-primary">
+                        Spelling/Grammar Check
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Document Selection Interface -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-2xl font-bold mb-4">Document Selection</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Select</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filename</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Uploaded</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for document in documents %}
+                    <tr>
+                        <td class="px-6 py-4">
+                            <input type="checkbox" 
+                                   class="document-select form-checkbox" 
+                                   data-id="{{ document.id }}"
+                                   data-type="{{ document.processing_type }}">
+                        </td>
+                        <td class="px-6 py-4">{{ document.filename }}</td>
+                        <td class="px-6 py-4">{{ document.processing_type }}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                {% if document.processing_status == 'completed' %}bg-green-100 text-green-800
+                                {% elif document.processing_status == 'failed' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ document.processing_status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- General Document Upload Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-2xl font-bold mb-4">Upload Emergency Documents</h2>
         <form id="uploadForm" class="space-y-4">
             <div>
                 <label for="document" class="block text-gray-700 font-medium mb-2">Upload Emergency Plans & Resources</label>
-                <input type="file" class="w-full p-2 border border-gray-300 rounded-md" id="document" accept=".pdf,.docx,.txt">
+                <input type="file" class="w-full p-2 border border-gray-300 rounded-md" id="document" accept=".pdf,.docx,.txt,.md,.json">
             </div>
             <div>
                 <label for="processing_type" class="block text-gray-700 font-medium mb-2">Processing Type</label>
@@ -15,44 +124,25 @@
                     <option value="text">Text Extraction</option>
                     <option value="summary">Document Summary</option>
                     <option value="analysis">Document Analysis</option>
+                    <option value="insurance_requirements">Insurance Requirements</option>
                 </select>
             </div>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Upload</button>
-        </form>
-    </div>
-
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-2xl font-bold mb-4">Your Documents</h2>
-        <div class="space-y-4">
-            {% for document in documents %}
-            <div class="p-4 border border-gray-200 rounded-lg">
-                <h3 class="font-medium">{{ document.filename }}</h3>
-                <p class="text-gray-600 text-sm">Uploaded on {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</p>
-                <p class="text-gray-600 text-sm">Processing Type: {{ document.processing_type }}</p>
-                <p class="text-gray-600 text-sm">Status: 
-                    <span class="
-                        {% if document.processing_status == 'completed' %}text-green-600
-                        {% elif document.processing_status == 'failed' %}text-red-600
-                        {% else %}text-yellow-600{% endif %}
-                    ">
-                        {{ document.processing_status }}
-                    </span>
-                </p>
-                {% if document.processed_content %}
-                <div class="mt-2">
-                    <button onclick="toggleContent('{{ document.id }}')" class="text-blue-600 hover:text-blue-800">
-                        Show/Hide Processed Content
-                    </button>
-                    <div id="content-{{ document.id }}" class="hidden mt-2 p-2 bg-gray-50 rounded">
-                        <pre class="whitespace-pre-wrap">{{ document.processed_content | tojson(indent=2) }}</pre>
-                    </div>
-                </div>
-                {% endif %}
+            <div>
+                <label for="format_type" class="block text-gray-700 font-medium mb-2">Format Options</label>
+                <select id="format_type" name="format_type" class="w-full p-2 border border-gray-300 rounded-md">
+                    <option value="plain">Plain Text</option>
+                    <option value="markdown">Markdown</option>
+                    <option value="json">JSON</option>
+                </select>
             </div>
-            {% else %}
-            <p class="text-gray-600">No documents uploaded yet.</p>
-            {% endfor %}
-        </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="cleanup" name="cleanup" class="form-checkbox h-4 w-4 text-blue-600">
+                <label for="cleanup" class="ml-2 block text-gray-700">
+                    Clean Up (Spellcheck and Grammar)
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload Document</button>
+        </form>
     </div>
 </div>
 
@@ -69,26 +159,155 @@ function showError(message, isConflict = false) {
             const file = fileInput.files[0];
             const newName = prompt('Enter a new filename:', file.name);
             if (newName) {
-                // Create a new File object with the new name
                 const renamedFile = new File([file], newName, { type: file.type });
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(renamedFile);
                 fileInput.files = dataTransfer.files;
-                return true; // Indicate that we should retry the upload
+                return true;
             }
         }
-        return false; // Don't retry if user cancels
+        return false;
     } else {
         alert(message);
         return false;
     }
 }
 
+function validateDocumentSelection() {
+    const selectedDocs = document.querySelectorAll('.document-select:checked');
+    if (selectedDocs.length !== 2) {
+        showError('Please select exactly two documents for analysis');
+        return false;
+    }
+
+    const hasRequirements = Array.from(selectedDocs).some(
+        checkbox => checkbox.dataset.type === 'insurance_requirements'
+    );
+    if (!hasRequirements) {
+        showError('One document must be an insurance requirements document');
+        return false;
+    }
+
+    return true;
+}
+
+async function analyzeDocuments(analysisType) {
+    if (!validateDocumentSelection()) return;
+
+    const selectedDocs = document.querySelectorAll('.document-select:checked');
+    const [doc1, doc2] = Array.from(selectedDocs);
+    const requirementsDoc = Array.from(selectedDocs).find(
+        checkbox => checkbox.dataset.type === 'insurance_requirements'
+    );
+    const claimDoc = Array.from(selectedDocs).find(
+        checkbox => checkbox.dataset.type !== 'insurance_requirements'
+    );
+
+    try {
+        const response = await fetch('/insurance-analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                requirement_document_id: requirementsDoc.dataset.id,
+                claim_document_id: claimDoc.dataset.id,
+                analysis_type: analysisType
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            alert('Analysis completed successfully');
+            location.reload();
+        } else {
+            showError(data.error || 'Analysis failed');
+        }
+    } catch (error) {
+        showError('Error performing analysis');
+    }
+}
+
+// Handle requirements document upload
+document.getElementById('requirementsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    const fileInput = document.getElementById('requirementsDoc');
+    
+    if (!fileInput.files[0]) {
+        showError('Please select a file');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    formData.append('processing_type', 'insurance_requirements');
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('Requirements document uploaded successfully');
+            location.reload();
+        } else if (response.status === 409) {
+            if (showError(data.error, true)) {
+                e.target.dispatchEvent(new Event('submit'));
+            }
+        } else {
+            showError(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        showError('Error uploading document');
+    }
+});
+
+// Handle claim document upload
+document.getElementById('claimForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    const fileInput = document.getElementById('claimDoc');
+    
+    if (!fileInput.files[0]) {
+        showError('Please select a file');
+        return;
+    }
+    
+    formData.append('file', fileInput.files[0]);
+    formData.append('processing_type', 'text');
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('Claim document uploaded successfully');
+            location.reload();
+        } else if (response.status === 409) {
+            if (showError(data.error, true)) {
+                e.target.dispatchEvent(new Event('submit'));
+            }
+        } else {
+            showError(data.error || 'Upload failed');
+        }
+    } catch (error) {
+        showError('Error uploading document');
+    }
+});
+
+// Handle general document upload
 document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
     const fileInput = document.getElementById('document');
     const processingType = document.getElementById('processing_type');
+    const formatType = document.getElementById('format_type');
+    const cleanup = document.getElementById('cleanup');
     
     if (!fileInput.files[0]) {
         showError('Please select a file');
@@ -97,6 +316,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     
     formData.append('file', fileInput.files[0]);
     formData.append('processing_type', processingType.value);
+    formData.append('format_type', formatType.value);
+    formData.append('cleanup', cleanup.checked);
     
     try {
         const response = await fetch('/upload', {
@@ -109,9 +330,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             alert('Document uploaded successfully');
             location.reload();
         } else if (response.status === 409) {
-            // Handle duplicate file conflict
             if (showError(data.error, true)) {
-                // If user chose to rename, retry the upload
                 e.target.dispatchEvent(new Event('submit'));
             }
         } else {
