@@ -8,13 +8,17 @@ from app import db
 from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
 from document_processor import process_document, analyze_insurance_claim
 import time
+from typing import List, Dict, Any, Optional
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam, ChatCompletionAssistantMessageParam
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint('chat', __name__)
-client = OpenAI()  # This will use OPENAI_API_KEY from env
+# the newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+# do not change this unless explicitly requested by the user
+client = OpenAI()
 
 def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
@@ -35,7 +39,7 @@ def chat_page():
 @chat_bp.route('/documents')
 @login_required
 def documents():
-    documents = Document.query.filter_by(user_id=current_user.id).all()
+    documents = Document.query.filter_by(user_id=current_user.id).order_by(Document.uploaded_at.desc()).all()
     requirements = InsuranceRequirement.query.filter_by(user_id=current_user.id).all()
     claims = InsuranceClaim.query.filter_by(user_id=current_user.id).all()
     return render_template('documents.html', 
@@ -96,26 +100,39 @@ def send_message(chat_id):
         db.session.add(user_message)
         db.session.commit()
 
-        # Get chat context
-        context_messages = [{"role": msg.role, "content": msg.content} 
-                          for msg in chat.messages[-5:]]  # Last 5 messages for context
+        # Get chat context and properly format messages for OpenAI
+        context_messages: List[ChatCompletionMessageParam] = []
+        for msg in chat.messages[-5:]:  # Last 5 messages for context
+            if msg.role == 'user':
+                context_messages.append(ChatCompletionUserMessageParam(role="user", content=msg.content))
+            elif msg.role == 'assistant':
+                context_messages.append(ChatCompletionAssistantMessageParam(role="assistant", content=msg.content))
+
+        # Create system message
+        system_message: ChatCompletionSystemMessageParam = {
+            "role": "system",
+            "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."
+        }
 
         # Call OpenAI API with exponential backoff
         max_attempts = 5
         assistant_content = None
         for attempt in range(max_attempts):
             try:
+                messages = [system_message] + context_messages
                 response = client.chat.completions.create(
-                    model="gpt-4o",  # Using the latest model as per blueprint
-                    messages=[
-                        {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response. Provide clear, actionable advice to help users prepare for and respond to emergencies."},
-                        *context_messages
-                    ],
+                    model="gpt-4o",
+                    messages=messages,
                     temperature=0.7,
                     max_tokens=1000
                 )
-                assistant_content = response.choices[0].message.content
-                break
+                
+                if response.choices and response.choices[0].message and response.choices[0].message.content:
+                    assistant_content = response.choices[0].message.content
+                    break
+                else:
+                    raise Exception("Empty response from OpenAI")
+                    
             except Exception as e:
                 logger.error(f"OpenAI API error (attempt {attempt + 1}): {str(e)}")
                 if attempt == max_attempts - 1:
@@ -141,16 +158,17 @@ def send_message(chat_id):
 @chat_bp.route('/upload', methods=['POST'])
 @login_required
 def upload_document():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file provided'}), 400
-    
-    file = request.files['file']
-    processing_type = request.form.get('processing_type', 'text')
-    
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-
+    document: Optional[Document] = None
     try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        processing_type = request.form.get('processing_type', 'text')
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+
         # Check for duplicate document
         existing_document = Document.query.filter_by(
             user_id=current_user.id,
@@ -171,7 +189,7 @@ def upload_document():
         document = Document(
             user_id=current_user.id,
             filename=file.filename,
-            content='',  # Will be updated after processing
+            content='',
             processing_type=processing_type
         )
         db.session.add(document)
@@ -209,13 +227,13 @@ def upload_document():
 
     except ValueError as e:
         logger.error(f"Value error processing document: {str(e)}")
-        if document.id:
+        if document:
             document.processing_status = 'failed'
             db.session.commit()
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Error processing document: {str(e)}")
-        if document.id:
+        if document:
             document.processing_status = 'failed'
             db.session.commit()
         db.session.rollback()
@@ -236,8 +254,6 @@ def analyze_insurance():
         req_doc_id = data.get('requirement_document_id')
         analysis_type = data.get('analysis_type')
 
-        logger.info(f"Starting insurance analysis - Type: {analysis_type}, Claim Doc: {claim_doc_id}, Req Doc: {req_doc_id}")
-
         if not all([claim_doc_id, req_doc_id, analysis_type]):
             return jsonify({'error': 'Missing required parameters'}), 400
 
@@ -246,7 +262,6 @@ def analyze_insurance():
         req_doc = Document.query.get_or_404(req_doc_id)
         
         if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
-            logger.warning(f"Unauthorized access attempt - User: {current_user.id}, Claim Doc: {claim_doc_id}, Req Doc: {req_doc_id}")
             return jsonify({'error': 'Unauthorized access'}), 403
 
         # Create a new chat for the analysis
@@ -254,7 +269,6 @@ def analyze_insurance():
         db.session.add(chat)
 
         # Analyze the claim
-        logger.info(f"Processing analysis for chat {chat.id}")
         analysis_result = analyze_insurance_claim(
             claim_doc.content,
             req_doc.content,
@@ -280,7 +294,6 @@ def analyze_insurance():
         db.session.add(message)
         
         db.session.commit()
-        logger.info(f"Analysis completed successfully - Chat ID: {chat.id}, Claim ID: {claim.id}")
 
         return jsonify({
             'message': 'Analysis completed successfully',
