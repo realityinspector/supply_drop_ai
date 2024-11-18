@@ -1,0 +1,40 @@
+{% extends "insurance/base_insurance.html" %}
+
+{% block insurance_content %}
+<div class="space-y-6">
+    <h3 class="text-lg font-semibold mb-3">Step 2: Upload Insurance Claim/Application</h3>
+    <p class="text-sm text-gray-600 mb-4">Upload your claim document for processing.</p>
+    
+    <form id="claimForm" class="space-y-4" action="{{ url_for('chat.upload_claim') }}" method="POST" enctype="multipart/form-data">
+        <div>
+            <label class="block text-gray-700 font-medium mb-2">Select Claim Document</label>
+            <div class="relative">
+                <input type="file" 
+                       class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
+                       id="claimDoc" 
+                       name="file"
+                       accept=".pdf,.docx,.txt,.md,.json"
+                       required>
+                <div class="absolute right-0 top-0 h-full flex items-center pr-3">
+                    <svg class="animate-spin h-5 w-5 text-blue-500 hidden" id="uploadSpinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div id="uploadProgress" class="mt-2 hidden">
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+                    <div class="progress-bar-fill bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out"></div>
+                </div>
+                <p class="text-xs text-gray-500 text-right" id="progressText"></p>
+            </div>
+        </div>
+        <button type="submit" 
+                class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200">
+            Upload Claim
+        </button>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/insurance-upload.js') }}"></script>
+{% endblock %}

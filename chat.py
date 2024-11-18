@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from openai import OpenAI
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import login_required, current_user
 from app import db
 from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
@@ -39,13 +39,8 @@ def chat_page():
 @chat_bp.route('/documents')
 @login_required
 def documents():
-    documents = Document.query.filter_by(user_id=current_user.id).order_by(Document.uploaded_at.desc()).all()
-    requirements = InsuranceRequirement.query.filter_by(user_id=current_user.id).all()
-    claims = InsuranceClaim.query.filter_by(user_id=current_user.id).all()
-    return render_template('documents.html', 
-                         documents=documents,
-                         requirements=requirements,
-                         claims=claims)
+    """Redirect to the insurance workflow step 1."""
+    return redirect(url_for('chat.insurance_step', step=1))
 
 @chat_bp.route('/checklists')
 @login_required
@@ -337,51 +332,119 @@ def get_workflow_state():
         logger.error(f"Error getting workflow state: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@chat_bp.route('/upload-claim', methods=['POST'])
+@chat_bp.route('/insurance/step/<int:step>')
 @login_required
-def upload_claim():
-    """Upload a claim document with validation against requirements."""
+def insurance_step(step):
+    """Handle insurance workflow steps."""
+    if step < 1 or step > 3:
+        flash('Invalid step', 'error')
+        return redirect(url_for('chat.insurance_step', step=1))
+
+    # Initialize session if needed
+    if 'insurance_step' not in session:
+        session['insurance_step'] = 1
+        session['can_proceed'] = False
+        session['requirements_doc_id'] = None
+        session['claim_doc_id'] = None
+
+    # Prevent accessing later steps if previous steps are not completed
+    if step > session['insurance_step']:
+        flash('Please complete the previous step first', 'error')
+        return redirect(url_for('chat.insurance_step', step=session['insurance_step']))
+
+    templates = {
+        1: 'insurance/step1_requirements.html',
+        2: 'insurance/step2_claim.html',
+        3: 'insurance/step3_analysis.html'
+    }
+
+    return render_template(templates[step])
+
+@chat_bp.route('/insurance/upload-requirements', methods=['POST'])
+@login_required
+def upload_requirements():
+    """Handle insurance requirements document upload."""
     try:
         if 'file' not in request.files:
+            flash('No file provided', 'error')
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        requirements_doc_id = request.form.get('requirements_doc_id')
-        
-        if not requirements_doc_id:
-            return jsonify({'error': 'Requirements document ID is required'}), 400
-        
-        # Verify requirements document exists and belongs to user
-        requirements_doc = Document.query.filter_by(
-            id=requirements_doc_id,
-            user_id=current_user.id,
-            processing_type='insurance_requirements',
-            processing_status='completed'
-        ).first()
-        
-        if not requirements_doc:
-            return jsonify({'error': 'Valid requirements document not found'}), 404
-
         if file.filename == '':
+            flash('No file selected', 'error')
             return jsonify({'error': 'No file selected'}), 400
 
-        # Check for duplicate document
-        existing_document = Document.query.filter_by(
+        # Process the file
+        document = Document(
             user_id=current_user.id,
-            filename=file.filename
-        ).first()
+            filename=file.filename,
+            content='',
+            processing_type='insurance_requirements'
+        )
+        db.session.add(document)
+        db.session.commit()
+
+        # Process the document
+        processed_result = process_document(file, 'insurance_requirements')
         
-        if existing_document:
-            return jsonify({
-                'error': 'A document with this name already exists'
-            }), 409
+        # Update document with processed content
+        document.content = processed_result.get('raw_text', '')
+        document.processed_content = processed_result
+        document.processing_status = 'completed'
 
-        # Check file size
-        if len(file.read()) > 16 * 1024 * 1024:  # 16MB limit
-            return jsonify({'error': 'File size exceeds 16MB limit'}), 400
-        file.seek(0)  # Reset file pointer after reading
+        # Create requirement records
+        if isinstance(processed_result, dict):
+            requirements = processed_result.get('requirements', [])
+            for req in requirements:
+                if isinstance(req, dict):
+                    requirement = InsuranceRequirement(
+                        user_id=current_user.id,
+                        document_id=document.id,
+                        requirement_text=req.get('requirement_text', ''),
+                        category=req.get('category'),
+                        priority=req.get('priority')
+                    )
+                    db.session.add(requirement)
 
-        # Create document with pending status
+        db.session.commit()
+
+        # Update session state
+        session['insurance_step'] = 2
+        session['can_proceed'] = True
+        session['requirements_doc_id'] = document.id
+
+        flash('Requirements document uploaded successfully!', 'success')
+        return jsonify({
+            'message': 'Requirements document uploaded successfully',
+            'document_id': document.id,
+            'next_step_url': url_for('chat.insurance_step', step=2)
+        })
+
+    except Exception as e:
+        logger.error(f"Error uploading requirements: {str(e)}")
+        flash('Error uploading document', 'error')
+        return jsonify({'error': str(e)}), 500
+
+@chat_bp.route('/insurance/upload-claim', methods=['POST'])
+@login_required
+def upload_claim():
+    """Handle insurance claim document upload."""
+    try:
+        # Verify previous step is completed
+        if not session.get('requirements_doc_id'):
+            flash('Please upload requirements document first', 'error')
+            return jsonify({'error': 'Requirements document not found'}), 400
+
+        if 'file' not in request.files:
+            flash('No file provided', 'error')
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            flash('No file selected', 'error')
+            return jsonify({'error': 'No file selected'}), 400
+
+        # Process the file
         document = Document(
             user_id=current_user.id,
             filename=file.filename,
@@ -392,7 +455,7 @@ def upload_claim():
         db.session.commit()
 
         # Process the document
-        processed_result = process_document(file, 'text')  # Use basic text processing for claims
+        processed_result = process_document(file, 'text')
         
         # Update document with processed content
         document.content = processed_result.get('raw_text', '')
@@ -400,17 +463,89 @@ def upload_claim():
         document.processing_status = 'completed'
         
         db.session.commit()
-        logger.info(f"Claim document uploaded successfully: {file.filename}")
 
+        # Update session state
+        session['insurance_step'] = 3
+        session['can_proceed'] = True
+        session['claim_doc_id'] = document.id
+
+        flash('Claim document uploaded successfully!', 'success')
         return jsonify({
-            'message': 'Claim document uploaded and processed successfully',
-            'document_id': document.id
+            'message': 'Claim document uploaded successfully',
+            'document_id': document.id,
+            'next_step_url': url_for('chat.insurance_step', step=3)
         })
 
-    except ValueError as e:
-        logger.error(f"Value error processing claim document: {str(e)}")
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        logger.error(f"Error processing claim document: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': f'Error processing document: {str(e)}'}), 500
+        logger.error(f"Error uploading claim: {str(e)}")
+        flash('Error uploading document', 'error')
+        return jsonify({'error': str(e)}), 500
+
+@chat_bp.route('/insurance/analyze', methods=['POST'])
+@login_required
+def analyze_documents():
+    """Handle insurance document analysis."""
+    try:
+        # Verify required documents are available
+        if not session.get('requirements_doc_id') or not session.get('claim_doc_id'):
+            flash('Please upload both requirements and claim documents first', 'error')
+            return redirect(url_for('chat.insurance_step', step=1))
+
+        analysis_type = request.form.get('analysis_type')
+        if not analysis_type:
+            flash('Analysis type is required', 'error')
+            return redirect(url_for('chat.insurance_step', step=3))
+
+        # Create a new chat for the analysis
+        chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {analysis_type}")
+        db.session.add(chat)
+
+        # Get the documents
+        claim_doc = Document.query.get_or_404(session['claim_doc_id'])
+        req_doc = Document.query.get_or_404(session['requirements_doc_id'])
+
+        # Verify document ownership
+        if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
+            flash('Unauthorized access', 'error')
+            return redirect(url_for('chat.insurance_step', step=1))
+
+        # Analyze the documents
+        analysis_result = analyze_insurance_claim(
+            claim_doc.content,
+            req_doc.content,
+            analysis_type
+        )
+
+        # Create a claim record
+        claim = InsuranceClaim(
+            user_id=current_user.id,
+            requirement_id=session['requirements_doc_id'],
+            document_id=session['claim_doc_id'],
+            analysis_type=analysis_type,
+            analysis_result=analysis_result
+        )
+        db.session.add(claim)
+
+        # Add the analysis result as a message in the chat
+        message = Message(
+            chat_id=chat.id,
+            content=json.dumps(analysis_result, indent=2),
+            role='assistant'
+        )
+        db.session.add(message)
+        
+        db.session.commit()
+
+        # Clear the session state after successful analysis
+        session.pop('insurance_step', None)
+        session.pop('can_proceed', None)
+        session.pop('requirements_doc_id', None)
+        session.pop('claim_doc_id', None)
+
+        flash('Analysis completed successfully', 'success')
+        return redirect(url_for('chat.chat_page', chat_id=chat.id))
+
+    except Exception as e:
+        logger.error(f"Error in insurance analysis: {str(e)}")
+        flash(f'Error during analysis: {str(e)}', 'error')
+        return redirect(url_for('chat.insurance_step', step=3))
