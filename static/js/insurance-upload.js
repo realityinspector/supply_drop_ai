@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBarFill = progressBar?.querySelector('.progress-bar-fill');
     const progressText = document.getElementById('progressText');
     const UPLOAD_TIMEOUT = 30000; // 30 seconds timeout
+    const TRANSITION_DELAY = 1000; // 1 second delay for animations
 
     form?.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -48,11 +49,22 @@ document.addEventListener('DOMContentLoaded', function() {
             // Start upload with progress tracking
             const result = await uploadWithXHR(formData);
             
-            // Show success and redirect
+            // Validate redirect URL
+            if (!result.next_step_url) {
+                throw new Error('Server did not provide next step URL');
+            }
+
+            // Complete the progress animation
+            await animateProgress(100);
+            
+            // Show success message
             showSuccess('Upload successful! Redirecting...');
-            setTimeout(() => {
-                window.location.href = result.next_step_url;
-            }, 1000);
+            
+            // Wait for animations to complete before redirect
+            await new Promise(resolve => setTimeout(resolve, TRANSITION_DELAY));
+            
+            // Redirect to next step
+            window.location.href = result.next_step_url;
 
         } catch (error) {
             handleUploadError(error);
@@ -74,10 +86,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }, UPLOAD_TIMEOUT);
 
             // Track upload progress
-            xhr.upload.addEventListener('progress', (event) => {
+            xhr.upload.addEventListener('progress', async (event) => {
                 if (event.lengthComputable) {
-                    const percentComplete = (event.loaded / event.total) * 100;
-                    updateProgress(percentComplete);
+                    const percentComplete = Math.min((event.loaded / event.total) * 95, 95);
+                    await animateProgress(percentComplete);
                 }
             });
 
@@ -87,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     try {
                         const response = JSON.parse(xhr.responseText);
-                        updateProgress(100);
                         resolve(response);
                     } catch (error) {
                         reject(new Error('Invalid response from server'));
@@ -124,6 +135,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    async function animateProgress(targetValue) {
+        const currentValue = parseInt(progressBarFill?.style.width) || 0;
+        const steps = 10;
+        const increment = (targetValue - currentValue) / steps;
+        
+        for (let i = 0; i <= steps; i++) {
+            const value = currentValue + (increment * i);
+            updateProgress(value);
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+    }
+
     function showUploadingState() {
         spinner?.classList.remove('hidden');
         progressBar?.classList.remove('hidden');
@@ -134,10 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function cleanupUploadState() {
         spinner?.classList.add('hidden');
         disableForm(false);
-        setTimeout(() => {
-            progressBar?.classList.add('hidden');
-            updateProgress(0);
-        }, 500);
     }
 
     function updateProgress(value) {
@@ -170,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         successDiv.className = 'mt-4 p-4 bg-green-100 text-green-700 rounded-md';
         successDiv.textContent = message;
         form?.appendChild(successDiv);
-        setTimeout(() => successDiv.remove(), 5000);
+        setTimeout(() => successDiv.remove(), TRANSITION_DELAY);
     }
 
     function clearMessages() {
