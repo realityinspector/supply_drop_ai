@@ -165,42 +165,47 @@ function isJSON(str) {
     }
 }
 
-function formatJSONContent(content, level = 0) {
-    const indent = '  '.repeat(level);
-    const depthClass = `json-depth-${Math.min(level + 1, 4)}`;
-    
-    if (typeof content !== 'object' || content === null) {
-        if (typeof content === 'string') return `<span class="${depthClass} json-string">"${content}"</span>`;
-        if (typeof content === 'number') return `<span class="${depthClass} json-number">${content}</span>`;
-        if (typeof content === 'boolean') return `<span class="${depthClass} json-boolean">${content}</span>`;
-        if (content === null) return `<span class="${depthClass} json-null">null</span>`;
-        return content;
+function transformJSONToContent(jsonObj) {
+    function createHeading(text, level) {
+        return `<h${level} class="content-h${level} mb-4">${text}</h${level}>`;
     }
 
-    const isArray = Array.isArray(content);
-    const entries = isArray ? content : Object.entries(content);
-    
-    if (Object.keys(content).length === 0) {
-        return `<span class="${depthClass} json-bracket">${isArray ? '[]' : '{}'}</span>`;
+    function createBulletList(items) {
+        if (!Array.isArray(items)) return '';
+        return `<ul class="content-list mb-4">
+            ${items.map(item => `<li class="content-list-item">${item}</li>`).join('')}
+        </ul>`;
     }
 
-    let result = `<div class="${depthClass}">`;
-    result += `<span class="json-bracket">${isArray ? '[' : '{'}</span>`;
-    result += `<div class="json-block">`;
-    
-    entries.forEach((item, index) => {
-        const [key, value] = isArray ? [null, item] : item;
-        result += `\n${indent}  `;
-        if (!isArray) {
-            result += `<span class="json-key">"${key}"</span>: `;
+    function formatContent(obj, level = 1) {
+        let html = '';
+        
+        for (const [key, value] of Object.entries(obj)) {
+            const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            
+            if (typeof value === 'object' && value !== null) {
+                if (Array.isArray(value)) {
+                    html += createHeading(formattedKey, Math.min(level, 4));
+                    html += createBulletList(value);
+                } else {
+                    html += createHeading(formattedKey, Math.min(level, 4));
+                    html += formatContent(value, level + 1);
+                }
+            } else {
+                if (key === 'summary' || key === 'risk_assessment') {
+                    html += `<p class="content-text mb-4">${value}</p>`;
+                } else if (key === 'score' || key === 'compliance_score') {
+                    html += `<p class="content-score mb-4">${formattedKey}: ${value}</p>`;
+                } else {
+                    html += `<p class="content-text mb-4"><strong>${formattedKey}:</strong> ${value}</p>`;
+                }
+            }
         }
-        result += formatJSONContent(value, level + 1);
-        if (index < entries.length - 1) result += ',';
-    });
-    
-    result += `\n${indent}</div><span class="json-bracket">${isArray ? ']' : '}'}</span></div>`;
-    
-    return result;
+        
+        return html;
+    }
+
+    return `<div class="content-container">${formatContent(jsonObj)}</div>`;
 }
 
 function updateCreditsDisplay(credits) {
@@ -224,7 +229,7 @@ function appendMessage(role, content) {
     if (typeof content === 'string' && isJSON(content)) {
         try {
             const jsonContent = JSON.parse(content);
-            formattedContent = `<div class="json-content">${formatJSONContent(jsonContent)}</div>`;
+            formattedContent = transformJSONToContent(jsonContent);
         } catch (e) {
             console.error('Error formatting JSON:', e);
         }

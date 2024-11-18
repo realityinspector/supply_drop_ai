@@ -49,62 +49,68 @@
     border-top: 1px solid var(--bs-border-color);
 }
 
-/* JSON Styling */
-.json-content {
-    font-family: monospace;
-    white-space: pre-wrap;
-    word-break: break-word;
+/* Content Hierarchy Styling */
+.content-container {
+    font-family: system-ui, -apple-system, sans-serif;
+    line-height: 1.5;
 }
 
-/* JSON depth-based hierarchy */
-.json-depth-1 {
-    font-size: 2rem;      /* h1 equivalent - 32px */
-    line-height: 2.5rem;
+.content-h1 {
+    font-size: 2rem;      /* 32px */
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 1rem;
 }
 
-.json-depth-2 {
-    font-size: 1.5rem;    /* h2 equivalent - 24px */
-    line-height: 2rem;
-}
-
-.json-depth-3 {
-    font-size: 1.25rem;   /* h3 equivalent - 20px */
-    line-height: 1.75rem;
-}
-
-.json-depth-4 {
-    font-size: 1rem;      /* h4 equivalent - 16px */
-    line-height: 1.5rem;
-}
-
-.json-key {
-    color: #9333ea;
+.content-h2 {
+    font-size: 1.5rem;    /* 24px */
     font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.75rem;
 }
 
-.json-string {
-    color: #16a34a;
-}
-
-.json-number {
-    color: #2563eb;
-}
-
-.json-boolean {
-    color: #dc2626;
-}
-
-.json-null {
-    color: #6b7280;
-    font-style: italic;
-}
-
-.json-block {
-    display: block;
-    padding-left: 1.5em;
-}
-
-.json-bracket {
-    color: #4b5563;
+.content-h3 {
+    font-size: 1.25rem;   /* 20px */
     font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.75rem;
+}
+
+.content-h4 {
+    font-size: 1rem;      /* 16px */
+    font-weight: 600;
+    color: #718096;
+    margin-bottom: 0.5rem;
+}
+
+.content-text {
+    font-size: 1rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    line-height: 1.625;
+}
+
+.content-score {
+    font-size: 1rem;
+    color: #2d3748;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.content-list {
+    list-style-type: disc;
+    margin-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.content-list-item {
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+    padding-left: 0.5rem;
+}
+
+/* Add spacing between sections */
+.content-container > * + * {
+    margin-top: 1.5rem;
 }
