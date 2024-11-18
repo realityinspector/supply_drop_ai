@@ -541,7 +541,9 @@ def insurance_step(step):
 def upload_claim():
     """Handle insurance claim document upload."""
     try:
-        # Verify previous step is completed
+        logger.info(f"Starting claim document upload process for user {current_user.id}")
+        
+        # Check if requirements document exists in session
         if not session.get('requirements_doc_id'):
             flash('Please upload requirements document first', 'error')
             return jsonify({'error': 'Requirements document not found'}), 400
@@ -613,8 +615,10 @@ def upload_claim():
 
     except Exception as e:
         logger.error(f"Error uploading claim: {str(e)}")
-        flash('Error uploading document', 'error')
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': str(e),
+            'details': 'An error occurred while processing your document'
+        }), 500
 
 @chat_bp.route('/insurance/analyze', methods=['POST'])
 @login_required

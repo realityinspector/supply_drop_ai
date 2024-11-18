@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const formData = new FormData();
                     formData.append('reuse_document_id', docId);
 
-                    fetch('/chat/upload-claim', {
+                    fetch('/insurance/upload-claim', {
                         method: 'POST',
                         body: formData
                     })
