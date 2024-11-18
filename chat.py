@@ -546,16 +546,38 @@ def upload_claim():
             flash('Please upload requirements document first', 'error')
             return jsonify({'error': 'Requirements document not found'}), 400
 
+        # Check if user wants to reuse existing document
+        reuse_doc_id = request.form.get('reuse_document_id')
+        if reuse_doc_id:
+            document = Document.query.get_or_404(reuse_doc_id)
+            if document.user_id != current_user.id:
+                return jsonify({'error': 'Unauthorized'}), 403
+                
+            session['insurance_step'] = 3
+            session['can_proceed'] = True
+            session['claim_doc_id'] = document.id
+            session.modified = True
+            
+            return jsonify({
+                'message': 'Reusing existing claim document',
+                'document_id': document.id
+            })
+        
+        # Handle new document upload
         if 'file' not in request.files:
-            flash('No file provided', 'error')
-            return jsonify({'error': 'No file provided'}), 400
+            return jsonify({
+                'error': 'No file provided',
+                'details': 'Please select a file to upload'
+            }), 400
         
         file = request.files['file']
         if file.filename == '':
-            flash('No file selected', 'error')
-            return jsonify({'error': 'No file selected'}), 400
+            return jsonify({
+                'error': 'No file selected',
+                'details': 'Please select a valid file'
+            }), 400
 
-        # Process the file
+        # Process the file and create document
         document = Document(
             user_id=current_user.id,
             filename=file.filename,
@@ -565,27 +587,29 @@ def upload_claim():
         db.session.add(document)
         db.session.commit()
 
-        # Process the document
-        processed_result = process_document(file, 'text')
-        
-        # Update document with processed content
-        document.content = processed_result.get('raw_text', '')
-        document.processed_content = processed_result
-        document.processing_status = 'completed'
-        
-        db.session.commit()
+        try:
+            # Process the document content
+            processed_result = process_document(file, 'text')
+            document.content = processed_result.get('raw_text', '')
+            document.processed_content = processed_result
+            document.processing_status = 'completed'
 
-        # Update session state
-        session['insurance_step'] = 3
-        session['can_proceed'] = True
-        session['claim_doc_id'] = document.id
+            # Update session state
+            session['insurance_step'] = 3
+            session['can_proceed'] = True
+            session['claim_doc_id'] = document.id
+            session.modified = True
+            
+            db.session.commit()
+            return jsonify({
+                'message': 'Claim document processed successfully',
+                'document_id': document.id
+            })
 
-        flash('Claim document uploaded successfully!', 'success')
-        return jsonify({
-            'message': 'Claim document uploaded successfully',
-            'document_id': document.id,
-            'next_step_url': url_for('chat.insurance_step', step=3)
-        })
+        except Exception as proc_error:
+            document.processing_status = 'failed'
+            db.session.commit()
+            raise
 
     except Exception as e:
         logger.error(f"Error uploading claim: {str(e)}")
