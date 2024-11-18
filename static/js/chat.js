@@ -154,7 +154,62 @@ document.addEventListener('DOMContentLoaded', function() {
     if (firstChat) {
         firstChat.click();
     }
+
+    // Add event delegation for JSON collapse toggles
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('json-collapse')) {
+            const content = e.target.nextElementSibling;
+            const isCollapsed = content.style.display === 'none';
+            content.style.display = isCollapsed ? 'block' : 'none';
+            e.target.textContent = isCollapsed ? '▼' : '▶';
+        }
+    });
 });
+
+function isJSON(str) {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+function formatJSONContent(content, level = 0) {
+    const indent = '  '.repeat(level);
+    
+    if (typeof content !== 'object' || content === null) {
+        if (typeof content === 'string') return `<span class="json-string">"${content}"</span>`;
+        if (typeof content === 'number') return `<span class="json-number">${content}</span>`;
+        if (typeof content === 'boolean') return `<span class="json-boolean">${content}</span>`;
+        if (content === null) return `<span class="json-null">null</span>`;
+        return content;
+    }
+
+    const isArray = Array.isArray(content);
+    let result = isArray ? '[' : '{';
+    const entries = isArray ? content : Object.entries(content);
+    
+    if (Object.keys(content).length > 0) {
+        result = `<span class="json-collapse">▼</span><span class="json-bracket">${result}</span><div style="display: block;">`;
+        
+        entries.forEach((item, index) => {
+            const [key, value] = isArray ? [null, item] : item;
+            result += `\n${indent}  `;
+            if (!isArray) {
+                result += `<span class="json-key">"${key}"</span>: `;
+            }
+            result += formatJSONContent(value, level + 1);
+            if (index < entries.length - 1) result += ',';
+        });
+        
+        result += `\n${indent}</div><span class="json-bracket">${isArray ? ']' : '}'}</span>`;
+    } else {
+        result += `${isArray ? ']' : '}'}`;
+    }
+    
+    return result;
+}
 
 function updateCreditsDisplay(credits) {
     const creditsDisplay = document.getElementById('creditsDisplay');
@@ -172,6 +227,16 @@ function appendMessage(role, content) {
         'assistant': 'SUPPLY DROP AI',
         'system': 'System'
     }[role];
+
+    let formattedContent = content;
+    if (typeof content === 'string' && isJSON(content)) {
+        try {
+            const jsonContent = JSON.parse(content);
+            formattedContent = `<div class="json-content">${formatJSONContent(jsonContent)}</div>`;
+        } catch (e) {
+            console.error('Error formatting JSON:', e);
+        }
+    }
     
     messageDiv.innerHTML = `
         <div class="message-content p-4 rounded-lg shadow-md ${
@@ -182,7 +247,7 @@ function appendMessage(role, content) {
             <div class="flex items-center gap-2">
                 <strong class="text-sm ${role === 'user' ? 'text-gray-100' : 'text-gray-600'}">${roleDisplay}</strong>
             </div>
-            <p class="mt-2 ${role === 'user' ? 'text-white' : 'text-gray-800'} whitespace-pre-wrap">${content}</p>
+            <div class="mt-2 ${role === 'user' ? 'text-white' : 'text-gray-800'}">${formattedContent}</div>
         </div>
     `;
     
