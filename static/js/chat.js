@@ -154,16 +154,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (firstChat) {
         firstChat.click();
     }
-
-    // Add event delegation for JSON collapse toggles
-    document.addEventListener('click', (e) => {
-        if (e.target.classList.contains('json-collapse')) {
-            const content = e.target.nextElementSibling.nextElementSibling;
-            const isCollapsed = content.style.display === 'none';
-            content.style.display = isCollapsed ? 'block' : 'none';
-            e.target.textContent = isCollapsed ? '▼' : '▶';
-        }
-    });
 });
 
 function isJSON(str) {
@@ -177,7 +167,7 @@ function isJSON(str) {
 
 function formatJSONContent(content, level = 0) {
     const indent = '  '.repeat(level);
-    const depthClass = `json-depth-${Math.min(level + 1, 6)}`;
+    const depthClass = `json-depth-${Math.min(level + 1, 4)}`;
     
     if (typeof content !== 'object' || content === null) {
         if (typeof content === 'string') return `<span class="${depthClass} json-string">"${content}"</span>`;
@@ -195,8 +185,8 @@ function formatJSONContent(content, level = 0) {
     }
 
     let result = `<div class="${depthClass}">`;
-    result += `<span class="json-collapse">▶</span><span class="json-bracket">${isArray ? '[' : '{'}</span>`;
-    result += `<div class="json-block" style="display: none;">`;
+    result += `<span class="json-bracket">${isArray ? '[' : '{'}</span>`;
+    result += `<div class="json-block">`;
     
     entries.forEach((item, index) => {
         const [key, value] = isArray ? [null, item] : item;

@@ -58,33 +58,23 @@
 
 /* JSON depth-based hierarchy */
 .json-depth-1 {
-    font-size: 2rem;      /* h1 equivalent */
+    font-size: 2rem;      /* h1 equivalent - 32px */
     line-height: 2.5rem;
 }
 
 .json-depth-2 {
-    font-size: 1.75rem;   /* h2 equivalent */
-    line-height: 2.25rem;
-}
-
-.json-depth-3 {
-    font-size: 1.5rem;    /* h3 equivalent */
+    font-size: 1.5rem;    /* h2 equivalent - 24px */
     line-height: 2rem;
 }
 
-.json-depth-4 {
-    font-size: 1.25rem;   /* h4 equivalent */
+.json-depth-3 {
+    font-size: 1.25rem;   /* h3 equivalent - 20px */
     line-height: 1.75rem;
 }
 
-.json-depth-5 {
-    font-size: 1.125rem;  /* h5 equivalent */
+.json-depth-4 {
+    font-size: 1rem;      /* h4 equivalent - 16px */
     line-height: 1.5rem;
-}
-
-.json-depth-6 {
-    font-size: 1rem;      /* h6 equivalent */
-    line-height: 1.25rem;
 }
 
 .json-key {
@@ -109,28 +99,12 @@
     font-style: italic;
 }
 
-.json-indent {
-    margin-left: 1.5rem;
+.json-block {
+    display: block;
+    padding-left: 1.5em;
 }
 
 .json-bracket {
     color: #4b5563;
     font-weight: 600;
-}
-
-.json-collapse {
-    cursor: pointer;
-    user-select: none;
-    display: inline-block;
-    width: 1.5em;
-    text-align: center;
-}
-
-.json-collapse:hover {
-    opacity: 0.8;
-}
-
-.json-block {
-    display: block;
-    padding-left: 1.5em;
 }
