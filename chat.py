@@ -225,6 +225,10 @@ def send_message(chat_id):
         if not content:
             return jsonify({'error': 'Message cannot be empty'}), 400
 
+        # Check if user has enough credits
+        if not current_user.deduct_credits(1):
+            return jsonify({'error': 'Insufficient credits. Please purchase more credits to continue.'}), 402
+
         # Save user message
         user_message = Message(chat_id=chat_id, content=content, role='user')
         db.session.add(user_message)
@@ -251,7 +255,7 @@ def send_message(chat_id):
             try:
                 messages = [system_message] + context_messages
                 response = client.chat.completions.create(
-                    model="gpt-4o",
+                    model="gpt-4",
                     messages=messages,
                     temperature=0.7,
                     max_tokens=1000
@@ -266,6 +270,9 @@ def send_message(chat_id):
             except Exception as e:
                 logger.error(f"OpenAI API error (attempt {attempt + 1}): {str(e)}")
                 if attempt == max_attempts - 1:
+                    # Refund the credit if API calls fail
+                    current_user.add_credits(1)
+                    db.session.commit()
                     return jsonify({'error': f'Failed to get response: {str(e)}'}), 500
                 exponential_backoff(attempt)
 
@@ -276,13 +283,19 @@ def send_message(chat_id):
             db.session.commit()
 
             return jsonify({
-                'message': assistant_content
+                'message': assistant_content,
+                'credits_remaining': current_user.credits
             })
         
+        # Refund the credit if we couldn't get a response
+        current_user.add_credits(1)
+        db.session.commit()
         return jsonify({'error': 'Failed to generate response'}), 500
     except Exception as e:
         logger.error(f"Error in send_message: {str(e)}")
-        db.session.rollback()
+        # Refund the credit in case of any error
+        current_user.add_credits(1)
+        db.session.commit()
         return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/upload', methods=['POST'])
