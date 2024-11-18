@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event delegation for JSON collapse toggles
     document.addEventListener('click', (e) => {
         if (e.target.classList.contains('json-collapse')) {
-            const content = e.target.nextElementSibling;
+            const content = e.target.nextElementSibling.nextElementSibling;
             const isCollapsed = content.style.display === 'none';
             content.style.display = isCollapsed ? 'block' : 'none';
             e.target.textContent = isCollapsed ? '▼' : '▶';
@@ -177,36 +177,38 @@ function isJSON(str) {
 
 function formatJSONContent(content, level = 0) {
     const indent = '  '.repeat(level);
+    const depthClass = `json-depth-${Math.min(level + 1, 6)}`;
     
     if (typeof content !== 'object' || content === null) {
-        if (typeof content === 'string') return `<span class="json-string">"${content}"</span>`;
-        if (typeof content === 'number') return `<span class="json-number">${content}</span>`;
-        if (typeof content === 'boolean') return `<span class="json-boolean">${content}</span>`;
-        if (content === null) return `<span class="json-null">null</span>`;
+        if (typeof content === 'string') return `<span class="${depthClass} json-string">"${content}"</span>`;
+        if (typeof content === 'number') return `<span class="${depthClass} json-number">${content}</span>`;
+        if (typeof content === 'boolean') return `<span class="${depthClass} json-boolean">${content}</span>`;
+        if (content === null) return `<span class="${depthClass} json-null">null</span>`;
         return content;
     }
 
     const isArray = Array.isArray(content);
-    let result = isArray ? '[' : '{';
     const entries = isArray ? content : Object.entries(content);
     
-    if (Object.keys(content).length > 0) {
-        result = `<span class="json-collapse">▼</span><span class="json-bracket">${result}</span><div style="display: block;">`;
-        
-        entries.forEach((item, index) => {
-            const [key, value] = isArray ? [null, item] : item;
-            result += `\n${indent}  `;
-            if (!isArray) {
-                result += `<span class="json-key">"${key}"</span>: `;
-            }
-            result += formatJSONContent(value, level + 1);
-            if (index < entries.length - 1) result += ',';
-        });
-        
-        result += `\n${indent}</div><span class="json-bracket">${isArray ? ']' : '}'}</span>`;
-    } else {
-        result += `${isArray ? ']' : '}'}`;
+    if (Object.keys(content).length === 0) {
+        return `<span class="${depthClass} json-bracket">${isArray ? '[]' : '{}'}</span>`;
     }
+
+    let result = `<div class="${depthClass}">`;
+    result += `<span class="json-collapse">▶</span><span class="json-bracket">${isArray ? '[' : '{'}</span>`;
+    result += `<div class="json-block" style="display: none;">`;
+    
+    entries.forEach((item, index) => {
+        const [key, value] = isArray ? [null, item] : item;
+        result += `\n${indent}  `;
+        if (!isArray) {
+            result += `<span class="json-key">"${key}"</span>: `;
+        }
+        result += formatJSONContent(value, level + 1);
+        if (index < entries.length - 1) result += ',';
+    });
+    
+    result += `\n${indent}</div><span class="json-bracket">${isArray ? ']' : '}'}</span></div>`;
     
     return result;
 }
