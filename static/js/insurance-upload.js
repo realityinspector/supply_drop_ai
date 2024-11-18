@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBar = document.getElementById('uploadProgress');
     const progressBarFill = progressBar?.querySelector('.progress-bar-fill');
     const progressText = document.getElementById('progressText');
+    const UPLOAD_TIMEOUT = 30000; // 30 seconds timeout
 
     form?.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -44,11 +45,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append('file', file);
 
-            // Log FormData contents for debugging
-            logFormData(formData);
-
             // Start upload with progress tracking
-            await uploadWithProgress(formData);
+            const result = await uploadWithXHR(formData);
+            
+            // Show success and redirect
+            showSuccess('Upload successful! Redirecting...');
+            setTimeout(() => {
+                window.location.href = result.next_step_url;
+            }, 1000);
 
         } catch (error) {
             handleUploadError(error);
@@ -56,6 +60,69 @@ document.addEventListener('DOMContentLoaded', function() {
             cleanupUploadState();
         }
     });
+
+    function uploadWithXHR(formData) {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            let timedOut = false;
+            
+            // Setup timeout
+            const timeoutId = setTimeout(() => {
+                timedOut = true;
+                xhr.abort();
+                reject(new Error('Upload timed out. Please try again.'));
+            }, UPLOAD_TIMEOUT);
+
+            // Track upload progress
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = (event.loaded / event.total) * 100;
+                    updateProgress(percentComplete);
+                }
+            });
+
+            // Handle response
+            xhr.addEventListener('load', () => {
+                clearTimeout(timeoutId);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        updateProgress(100);
+                        resolve(response);
+                    } catch (error) {
+                        reject(new Error('Invalid response from server'));
+                    }
+                } else {
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        reject(new Error(errorResponse.error || 'Upload failed'));
+                    } catch (error) {
+                        reject(new Error(`Upload failed with status: ${xhr.status}`));
+                    }
+                }
+            });
+
+            // Handle network errors
+            xhr.addEventListener('error', () => {
+                clearTimeout(timeoutId);
+                if (!timedOut) {
+                    reject(new Error('Network error occurred. Please check your connection.'));
+                }
+            });
+
+            // Handle abort
+            xhr.addEventListener('abort', () => {
+                clearTimeout(timeoutId);
+                if (!timedOut) {
+                    reject(new Error('Upload was cancelled.'));
+                }
+            });
+
+            // Start upload
+            xhr.open('POST', form.action);
+            xhr.send(formData);
+        });
+    }
 
     function showUploadingState() {
         spinner?.classList.remove('hidden');
@@ -73,50 +140,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 500);
     }
 
-    async function uploadWithProgress(formData) {
-        // Start progress animation
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            if (progress < 90) {
-                progress += 10;
-                updateProgress(progress);
-            }
-        }, 500);
-
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                body: formData
-            });
-
-            clearInterval(progressInterval);
-
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || `Upload failed with status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            // Complete progress bar
-            updateProgress(100);
-            showSuccess('Upload successful! Redirecting...');
-
-            // Redirect to next step
-            setTimeout(() => {
-                window.location.href = data.next_step_url;
-            }, 1000);
-
-        } catch (error) {
-            clearInterval(progressInterval);
-            throw error;
-        }
-    }
-
     function updateProgress(value) {
         if (progressBarFill && progressText) {
-            progressBarFill.style.width = `${value}%`;
-            progressText.textContent = `${value}%`;
+            // Ensure value is between 0 and 100
+            const safeValue = Math.min(Math.max(0, value), 100);
+            progressBarFill.style.width = `${safeValue}%`;
+            progressText.textContent = `${Math.round(safeValue)}%`;
         }
     }
 
@@ -151,12 +180,5 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleUploadError(error) {
         logger.error('Upload error:', error);
         showError(error.message || 'Error uploading file. Please try again.');
-    }
-
-    function logFormData(formData) {
-        console.log('FormData contents:');
-        for (const pair of formData.entries()) {
-            console.log(pair[0], pair[1]);
-        }
     }
 });
