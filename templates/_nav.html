@@ -22,11 +22,14 @@
         {% endfor %}
     
         {% if current_user.is_authenticated %}
-            <span class="text-sm text-gray-300">{{ current_user.username }}</span>
-            <a href="{{ url_for('auth.logout') }}" 
-               class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">
-                Logout
-            </a>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-300">{{ current_user.username }}</span>
+                <span class="text-sm text-green-400">Credits: {{ current_user.credits }}</span>
+                <a href="{{ url_for('auth.logout') }}" 
+                   class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">
+                    Logout
+                </a>
+            </div>
         {% else %}
             <a href="{{ url_for('auth.login') }}" 
                class="text-sm text-gray-300 hover:text-white transition-colors">Login</a>
@@ -70,7 +73,10 @@
             {% endfor %}
             
             {% if current_user.is_authenticated %}
-                <span class="block px-3 py-2 text-gray-300">{{ current_user.username }}</span>
+                <div class="px-3 py-2">
+                    <span class="block text-gray-300">{{ current_user.username }}</span>
+                    <span class="block text-green-400">Credits: {{ current_user.credits }}</span>
+                </div>
                 <a href="{{ url_for('auth.logout') }}" 
                    class="block px-3 py-2 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">Logout</a>
             {% else %}

@@ -46,6 +46,13 @@
 
     <!-- Chat Area -->
     <div class="flex-1 flex flex-col bg-gray-50">
+        <!-- Credits Display -->
+        <div class="bg-white border-b border-gray-200 p-3 text-right">
+            <span id="creditsDisplay" class="text-sm font-medium text-green-600">
+                Credits remaining: {{ current_user.credits }}
+            </span>
+        </div>
+
         <!-- Messages Container -->
         <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
             <!-- Messages will be inserted here -->

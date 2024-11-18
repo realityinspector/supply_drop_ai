@@ -93,8 +93,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (response.ok) {
                 appendMessage('assistant', data.message);
+                updateCreditsDisplay(data.credits_remaining);
             } else {
-                if (response.status === 429) {
+                if (response.status === 402) {
+                    appendMessage('system', 'Insufficient credits. Please purchase more credits to continue.');
+                } else if (response.status === 429) {
                     appendMessage('system', 'Rate limit exceeded. Please wait a moment before trying again.');
                 } else {
                     appendMessage('system', data.error || 'Failed to send message');
@@ -152,6 +155,13 @@ document.addEventListener('DOMContentLoaded', function() {
         firstChat.click();
     }
 });
+
+function updateCreditsDisplay(credits) {
+    const creditsDisplay = document.getElementById('creditsDisplay');
+    if (creditsDisplay) {
+        creditsDisplay.textContent = `Credits remaining: ${credits}`;
+    }
+}
 
 function appendMessage(role, content) {
     const messageDiv = document.createElement('div');
