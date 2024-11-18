@@ -3,11 +3,28 @@
 {% block insurance_content %}
 <div class="space-y-6">
     <h3 class="text-lg font-semibold mb-3">Step 1: Upload Insurance Requirements and Policy</h3>
-    <p class="text-sm text-gray-600 mb-4">Please upload your insurance requirements document to begin the process.</p>
+    <p class="text-sm text-gray-600 mb-4">Please upload your insurance requirements document or select a previously uploaded document.</p>
     
+    <!-- Previously Uploaded Documents -->
+    <div id="existingDocuments" class="mb-6 hidden">
+        <h4 class="text-md font-medium mb-2">Previously Uploaded Documents</h4>
+        <div class="bg-gray-50 rounded-lg p-4">
+            <select id="existingDocumentSelect" 
+                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Select a previous document...</option>
+            </select>
+            <button id="reuseDocumentBtn" 
+                    class="mt-2 btn btn-secondary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200"
+                    disabled>
+                Use Selected Document
+            </button>
+        </div>
+    </div>
+
+    <!-- Upload New Document Form -->
     <form id="requirementsForm" class="space-y-4" action="{{ url_for('chat.upload_requirements') }}" method="POST" enctype="multipart/form-data">
         <div>
-            <label class="block text-gray-700 font-medium mb-2">Select Requirements Document</label>
+            <label class="block text-gray-700 font-medium mb-2">Upload New Requirements Document</label>
             <div class="relative">
                 <input type="file" 
                        class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
@@ -36,5 +53,58 @@
     </form>
 </div>
 
-<script src="{{ url_for('static', filename='js/insurance-upload.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Fetch existing documents
+    fetch('/insurance/documents')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('existingDocumentSelect');
+            const existingDocs = document.getElementById('existingDocuments');
+            const reuseBtn = document.getElementById('reuseDocumentBtn');
+            
+            if (data.requirements_documents && data.requirements_documents.length > 0) {
+                existingDocs.classList.remove('hidden');
+                
+                data.requirements_documents.forEach(doc => {
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.textContent = `${doc.filename} (${new Date(doc.uploaded_at).toLocaleDateString()})`;
+                    select.appendChild(option);
+                });
+
+                select.addEventListener('change', function() {
+                    reuseBtn.disabled = !this.value;
+                });
+
+                reuseBtn.addEventListener('click', function() {
+                    const docId = select.value;
+                    if (!docId) return;
+
+                    const formData = new FormData();
+                    formData.append('reuse_document_id', docId);
+
+                    fetch('/insurance/upload-requirements', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.document_id) {
+                            window.location.href = '/insurance/step/2';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Failed to reuse document. Please try again.');
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching documents:', error);
+        });
+});
+</script>
+
 {% endblock %}

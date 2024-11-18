@@ -30,6 +30,49 @@ def documents():
     """Show the insurance document processing overview."""
     return render_template('insurance/start.html')
 
+@chat_bp.route('/insurance/documents')
+@login_required
+def list_insurance_documents():
+    """List available insurance documents for reuse."""
+    try:
+        requirements_docs = Document.query.filter_by(
+            user_id=current_user.id,
+            processing_type='insurance_requirements'
+        ).order_by(Document.uploaded_at.desc()).all()
+        
+        claim_docs = Document.query.filter_by(
+            user_id=current_user.id,
+            processing_type='insurance_claim'
+        ).order_by(Document.uploaded_at.desc()).all()
+        
+        return jsonify({
+            'requirements_documents': [{'id': doc.id, 'filename': doc.filename, 'uploaded_at': doc.uploaded_at.isoformat()} for doc in requirements_docs],
+            'claim_documents': [{'id': doc.id, 'filename': doc.filename, 'uploaded_at': doc.uploaded_at.isoformat()} for doc in claim_docs]
+        })
+    except Exception as e:
+        logger.error(f"Error listing insurance documents: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@chat_bp.route('/insurance/document/<int:doc_id>')
+@login_required
+def get_insurance_document(doc_id):
+    """Get details of a specific insurance document."""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        if document.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+            
+        return jsonify({
+            'id': document.id,
+            'filename': document.filename,
+            'processing_type': document.processing_type,
+            'uploaded_at': document.uploaded_at.isoformat(),
+            'processed_content': document.processed_content
+        })
+    except Exception as e:
+        logger.error(f"Error fetching insurance document: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @chat_bp.route('/insurance/upload')
 @login_required
 def insurance_upload():
@@ -53,40 +96,38 @@ def upload_requirements():
     try:
         logger.info(f"Starting requirements document upload process for user {current_user.id}")
         
-        # Validate request has file
+        # Check if user wants to reuse existing document
+        reuse_doc_id = request.form.get('reuse_document_id')
+        if reuse_doc_id:
+            document = Document.query.get_or_404(reuse_doc_id)
+            if document.user_id != current_user.id:
+                return jsonify({'error': 'Unauthorized'}), 403
+                
+            session['insurance_step'] = 2
+            session['can_proceed'] = True
+            session['requirements_doc_id'] = document.id
+            session.modified = True
+            
+            return jsonify({
+                'message': 'Reusing existing requirements document',
+                'document_id': document.id
+            })
+        
+        # Handle new document upload
         if 'file' not in request.files:
-            logger.error(f"No file found in request.files for user {current_user.id}")
-            logger.debug(f"Request files: {request.files}")
-            logger.debug(f"Request form: {request.form}")
             return jsonify({
                 'error': 'No file provided',
                 'details': 'Please select a file to upload'
-            }), 400, {'X-Error-Type': 'validation'}
+            }), 400
         
         file = request.files['file']
-        logger.info(f"Received file: {file.filename} from user {current_user.id}")
-        
         if file.filename == '':
-            logger.error(f"Empty filename received from user {current_user.id}")
             return jsonify({
                 'error': 'No file selected',
                 'details': 'Please select a valid file'
-            }), 400, {'X-Error-Type': 'validation'}
+            }), 400
 
-        # Validate file size
-        file_content = file.read()
-        file_size = len(file_content)
-        if file_size > 16 * 1024 * 1024:  # 16MB limit
-            logger.error(f"File size ({file_size} bytes) exceeds limit for user {current_user.id}")
-            return jsonify({
-                'error': 'File size exceeds 16MB limit',
-                'details': 'Please upload a smaller file'
-            }), 400, {'X-Error-Type': 'validation'}
-        
-        file.seek(0)  # Reset file pointer after reading
-
-        # Process the file
-        logger.info(f"Creating document record for user {current_user.id}")
+        # Process the file and create document
         document = Document(
             user_id=current_user.id,
             filename=file.filename,
@@ -95,14 +136,9 @@ def upload_requirements():
         )
         db.session.add(document)
         db.session.commit()
-        logger.info(f"Created document record with ID: {document.id} for user {current_user.id}")
 
         try:
-            # Process the document
-            logger.info(f"Processing document content for document ID: {document.id}")
             processed_result = process_document(file, 'insurance_requirements')
-            
-            # Update document with processed content
             document.content = processed_result.get('raw_text', '')
             document.processed_content = processed_result
             document.processing_status = 'completed'
@@ -121,48 +157,111 @@ def upload_requirements():
                         )
                         db.session.add(requirement)
 
-            # Update session state before committing
             session['insurance_step'] = 2
             session['can_proceed'] = True
             session['requirements_doc_id'] = document.id
             session.modified = True
             
-            # Commit all changes
             db.session.commit()
-            logger.info(f"Document processing completed successfully for document ID: {document.id}")
-
-            # Create response with transition headers
-            response = jsonify({
-                'message': 'Requirements document uploaded successfully',
-                'document_id': document.id,
-                'next_step_url': url_for('chat.insurance_step', step=2),
-                'transition_state': {
-                    'current_step': 2,
-                    'can_proceed': True,
-                    'requirements_doc_id': document.id
-                }
+            return jsonify({
+                'message': 'Requirements document processed successfully',
+                'document_id': document.id
             })
-            
-            # Add custom headers for state transition
-            response.headers['X-Transition-Step'] = '2'
-            response.headers['X-Can-Proceed'] = 'true'
-            response.headers['X-Document-Id'] = str(document.id)
-            
-            flash('Requirements document uploaded successfully!', 'success')
-            return response
 
         except Exception as proc_error:
-            logger.error(f"Error processing document: {str(proc_error)}", exc_info=True)
             document.processing_status = 'failed'
             db.session.commit()
             raise
 
     except Exception as e:
-        logger.error(f"Error uploading requirements: {str(e)}", exc_info=True)
+        logger.error(f"Error uploading requirements: {str(e)}")
         return jsonify({
             'error': str(e),
             'details': 'An error occurred while processing your document'
-        }), 500, {'X-Error-Type': 'processing'}
+        }), 500
+
+@chat_bp.route('/insurance-analysis', methods=['POST'])
+@login_required
+def analyze_insurance():
+    """Analyze insurance documents with specified analysis type."""
+    try:
+        if not request.is_json:
+            return jsonify({'error': 'Invalid request format'}), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        claim_doc_id = data.get('claim_document_id')
+        req_doc_id = data.get('requirement_document_id')
+        analysis_type = data.get('analysis_type')
+
+        if not all([claim_doc_id, req_doc_id, analysis_type]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+
+        # Verify document ownership and access
+        claim_doc = Document.query.get_or_404(claim_doc_id)
+        req_doc = Document.query.get_or_404(req_doc_id)
+        
+        if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized access'}), 403
+
+        # Create a new chat for the analysis
+        chat = Chat(
+            user_id=current_user.id, 
+            title=f"Insurance Analysis - {analysis_type.capitalize()}"
+        )
+        db.session.add(chat)
+
+        # Create insurance claim record
+        claim = InsuranceClaim(
+            user_id=current_user.id,
+            requirement_id=req_doc_id,
+            document_id=claim_doc_id,
+            analysis_type=analysis_type
+        )
+        db.session.add(claim)
+        db.session.commit()
+
+        # Perform analysis
+        analysis_result = analyze_insurance_claim(
+            claim_doc.content,
+            req_doc.content,
+            analysis_type
+        )
+
+        # Update claim with analysis results
+        claim.analysis_result = analysis_result
+        claim.status = 'completed'
+        
+        # Create initial message in chat
+        system_message = Message(
+            chat_id=chat.id,
+            content=f"Analysis type: {analysis_type.capitalize()}\nRequirements document: {req_doc.filename}\nClaim document: {claim_doc.filename}",
+            role='system'
+        )
+        db.session.add(system_message)
+
+        # Add analysis result as assistant message
+        analysis_message = Message(
+            chat_id=chat.id,
+            content=json.dumps(analysis_result, indent=2),
+            role='assistant'
+        )
+        db.session.add(analysis_message)
+        
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Analysis completed successfully',
+            'chat_id': chat.id,
+            'claim_id': claim.id,
+            'analysis_result': analysis_result
+        })
+
+    except Exception as e:
+        logger.error(f"Error analyzing insurance documents: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/')
 def index():
@@ -381,77 +480,6 @@ def upload_document():
             db.session.commit()
         db.session.rollback()
         return jsonify({'error': f'Error processing document: {str(e)}'}), 500
-
-@chat_bp.route('/insurance-analysis', methods=['POST'])
-@login_required
-def analyze_insurance():
-    try:
-        if not request.is_json:
-            return jsonify({'error': 'Invalid request format'}), 400
-
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
-
-        claim_doc_id = data.get('claim_document_id')
-        req_doc_id = data.get('requirement_document_id')
-        analysis_type = data.get('analysis_type')
-
-        if not all([claim_doc_id, req_doc_id, analysis_type]):
-            return jsonify({'error': 'Missing required parameters'}), 400
-
-        # Verify document ownership and access
-        claim_doc = Document.query.get_or_404(claim_doc_id)
-        req_doc = Document.query.get_or_404(req_doc_id)
-        
-        if claim_doc.user_id != current_user.id or req_doc.user_id != current_user.id:
-            return jsonify({'error': 'Unauthorized access'}), 403
-
-        # Create a new chat for the analysis
-        chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {analysis_type}")
-        db.session.add(chat)
-
-        # Analyze the claim
-        analysis_result = analyze_insurance_claim(
-            claim_doc.content,
-            req_doc.content,
-            analysis_type
-        )
-
-        # Create a claim record
-        claim = InsuranceClaim(
-            user_id=current_user.id,
-            requirement_id=req_doc_id,
-            document_id=claim_doc_id,
-            analysis_type=analysis_type,
-            analysis_result=analysis_result
-        )
-        db.session.add(claim)
-
-        # Add the analysis result as a message in the chat
-        message = Message(
-            chat_id=chat.id,
-            content=json.dumps(analysis_result, indent=2),
-            role='assistant'
-        )
-        db.session.add(message)
-        
-        db.session.commit()
-
-        return jsonify({
-            'message': 'Analysis completed successfully',
-            'chat_id': chat.id,
-            'claim_id': claim.id,
-            'analysis_result': analysis_result
-        })
-
-    except Exception as e:
-        logger.error(f"Error in insurance analysis: {str(e)}")
-        db.session.rollback()
-        return jsonify({
-            'error': str(e),
-            'details': 'An error occurred during analysis. Please try again.'
-        }), 500
 
 @chat_bp.route('/workflow-state')
 @login_required

@@ -6,57 +6,127 @@
     <p class="text-sm text-gray-600 mb-4">Select an analysis type to process your documents.</p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <form action="{{ url_for('chat.analyze_documents') }}" method="POST" class="contents">
-            <input type="hidden" name="analysis_type" value="critique">
-            <button type="submit" 
-                    class="btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200">
-                <span class="relative z-10 flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Critique/Reject Analysis
-                </span>
+        <!-- Critique Analysis -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <button onclick="analyzeDocuments('critique')" 
+                    class="w-full text-left space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <h4 class="font-semibold">Critique Analysis</h4>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Critically evaluate the claim against requirements. Identify gaps, inconsistencies, and concerns.
+                </p>
             </button>
-        </form>
+        </div>
 
-        <form action="{{ url_for('chat.analyze_documents') }}" method="POST" class="contents">
-            <input type="hidden" name="analysis_type" value="enhance">
-            <button type="submit" 
-                    class="btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200">
-                <span class="relative z-10 flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    Enhancement Suggestions
-                </span>
+        <!-- Enhancement Analysis -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <button onclick="analyzeDocuments('enhance')" 
+                    class="w-full text-left space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <h4 class="font-semibold">Enhancement Analysis</h4>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Suggest improvements and enhancements based on industry best practices.
+                </p>
             </button>
-        </form>
+        </div>
 
-        <form action="{{ url_for('chat.analyze_documents') }}" method="POST" class="contents">
-            <input type="hidden" name="analysis_type" value="formalize">
-            <button type="submit" 
-                    class="btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200">
-                <span class="relative z-10 flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    Formalize Tone
-                </span>
+        <!-- Formalization Analysis -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <button onclick="analyzeDocuments('formalize')" 
+                    class="w-full text-left space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h4 class="font-semibold">Formalization</h4>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Rewrite in formal, professional insurance language while maintaining clarity.
+                </p>
             </button>
-        </form>
+        </div>
 
-        <form action="{{ url_for('chat.analyze_documents') }}" method="POST" class="contents">
-            <input type="hidden" name="analysis_type" value="grammar">
-            <button type="submit" 
-                    class="btn btn-primary group relative overflow-hidden transform hover:scale-105 active:scale-95 transition-all duration-200">
-                <span class="relative z-10 flex items-center justify-center">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Spelling/Grammar Check
-                </span>
+        <!-- Grammar Analysis -->
+        <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <button onclick="analyzeDocuments('grammar')" 
+                    class="w-full text-left space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                        <h4 class="font-semibold">Grammar Check</h4>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">
+                    Comprehensive grammar and spelling analysis with professional corrections.
+                </p>
             </button>
-        </form>
+        </div>
     </div>
+
+    <!-- Analysis Status -->
+    <div id="analysisStatus" class="mt-6 hidden">
+        <div class="flex items-center space-x-2">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+            <span class="text-blue-600">Processing analysis...</span>
+        </div>
+    </div>
+
+    <!-- Error Display -->
+    <div id="errorMessage" class="mt-4 p-4 rounded-md bg-red-100 text-red-700 hidden"></div>
 </div>
+
+<script>
+async function analyzeDocuments(analysisType) {
+    const statusDiv = document.getElementById('analysisStatus');
+    const errorDiv = document.getElementById('errorMessage');
+    
+    try {
+        statusDiv.classList.remove('hidden');
+        errorDiv.classList.add('hidden');
+        
+        const response = await fetch('/insurance-analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                claim_document_id: '{{ session.get("claim_doc_id") }}',
+                requirement_document_id: '{{ session.get("requirements_doc_id") }}',
+                analysis_type: analysisType
+            })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Redirect to chat view with the analysis results
+            window.location.href = `/chat?chat_id=${data.chat_id}`;
+        } else {
+            throw new Error(data.error || 'Analysis failed');
+        }
+    } catch (error) {
+        errorDiv.textContent = error.message;
+        errorDiv.classList.remove('hidden');
+    } finally {
+        statusDiv.classList.add('hidden');
+    }
+}
+</script>
+
 {% endblock %}
