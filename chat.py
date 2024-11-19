@@ -101,31 +101,26 @@ def upload_requirements():
         if reuse_doc_id:
             document = Document.query.get_or_404(reuse_doc_id)
             if document.user_id != current_user.id:
-                return jsonify({'error': 'Unauthorized'}), 403
+                flash('Unauthorized access to document', 'error')
+                return redirect(url_for('chat.insurance_step', step=1))
                 
             session['insurance_step'] = 2
             session['can_proceed'] = True
             session['requirements_doc_id'] = document.id
             session.modified = True
             
-            return jsonify({
-                'message': 'Reusing existing requirements document',
-                'document_id': document.id
-            })
+            flash('Successfully reused existing document', 'success')
+            return redirect(url_for('chat.insurance_step', step=2))
         
         # Handle new document upload
         if 'file' not in request.files:
-            return jsonify({
-                'error': 'No file provided',
-                'details': 'Please select a file to upload'
-            }), 400
+            flash('No file provided', 'error')
+            return redirect(url_for('chat.insurance_step', step=1))
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({
-                'error': 'No file selected',
-                'details': 'Please select a valid file'
-            }), 400
+            flash('No file selected', 'error')
+            return redirect(url_for('chat.insurance_step', step=1))
 
         # Process the file and create document
         document = Document(
@@ -163,10 +158,8 @@ def upload_requirements():
             session.modified = True
             
             db.session.commit()
-            return jsonify({
-                'message': 'Requirements document processed successfully',
-                'document_id': document.id
-            })
+            flash('Requirements document processed successfully', 'success')
+            return redirect(url_for('chat.insurance_step', step=2))
 
         except Exception as proc_error:
             document.processing_status = 'failed'
@@ -175,10 +168,8 @@ def upload_requirements():
 
     except Exception as e:
         logger.error(f"Error uploading requirements: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'details': 'An error occurred while processing your document'
-        }), 500
+        flash(str(e), 'error')
+        return redirect(url_for('chat.insurance_step', step=1))
 
 @chat_bp.route('/insurance-analysis', methods=['POST'])
 @login_required

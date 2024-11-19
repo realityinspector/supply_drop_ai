@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeWorkflow();
     attachEventListeners();
     checkExistingDocuments();
+    
+    // Check for flash messages
+    const flashMessages = document.querySelectorAll('.flash-message');
+    flashMessages.forEach(msg => {
+        setTimeout(() => {
+            msg.style.opacity = '0';
+            setTimeout(() => msg.remove(), 300);
+        }, 5000);
+    });
 });
 
 function initializeWorkflow() {
@@ -32,15 +41,229 @@ function initializeWorkflow() {
 function attachEventListeners() {
     // Requirements form submission
     const requirementsForm = document.getElementById('requirementsForm');
-    requirementsForm?.addEventListener('submit', handleRequirementsUpload);
+    if (requirementsForm) {
+        requirementsForm.addEventListener('submit', handleRequirementsUpload);
+        
+        // File input change listener
+        const fileInput = requirementsForm.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.addEventListener('change', validateFile);
+        }
+    }
 
     // Claim form submission
     const claimForm = document.getElementById('claimForm');
-    claimForm?.addEventListener('submit', handleClaimUpload);
+    if (claimForm) {
+        claimForm.addEventListener('submit', handleClaimUpload);
+        
+        // File input change listener
+        const fileInput = claimForm.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.addEventListener('change', validateFile);
+        }
+    }
+}
 
-    // File input change listeners for validation
-    document.getElementById('requirementsDoc')?.addEventListener('change', validateFile);
-    document.getElementById('claimDoc')?.addEventListener('change', validateFile);
+async function handleRequirementsUpload(e) {
+    e.preventDefault();
+    
+    if (workflowState.isUploading || workflowState.isTransitioning) {
+        return;
+    }
+    
+    const form = e.target;
+    const fileInput = form.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
+    const submitButton = form.querySelector('button[type="submit"]');
+    const progressIndicator = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('progressText');
+    
+    if (!file || !validateFile({ target: fileInput })) {
+        return;
+    }
+
+    try {
+        // Set upload states
+        workflowState.isUploading = true;
+        disableFormElements(true);
+        showUploadingState();
+        
+        // Show initial loading state
+        await animateProgress(0, 20);
+        updateStatus('requirementsStatus', '📤 Processing document...', 'processing');
+
+        const formData = new FormData(form);
+        
+        // Start upload with progress tracking
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                updateUploadProgress(percentComplete);
+            }
+        };
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    // Handle successful upload
+                    completeUpload();
+                } else {
+                    // Handle upload error
+                    handleUploadError(new Error('Upload failed'));
+                }
+            }
+        };
+        
+        xhr.send(formData);
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        handleUploadError(error);
+    }
+}
+
+function showUploadingState() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const uploadProgress = document.getElementById('uploadProgress');
+    
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.style.opacity = '1';
+    }
+    
+    if (uploadProgress) {
+        uploadProgress.classList.remove('hidden');
+        uploadProgress.style.opacity = '1';
+    }
+}
+
+async function animateProgress(start, end) {
+    const progressBar = document.querySelector('.progress-bar-fill');
+    const progressText = document.getElementById('progressText');
+    const duration = 300;
+    const steps = 20;
+    const increment = (end - start) / steps;
+    
+    for (let i = 0; i <= steps; i++) {
+        const currentProgress = start + (increment * i);
+        if (progressBar) {
+            progressBar.style.width = `${currentProgress}%`;
+        }
+        if (progressText) {
+            progressText.textContent = `${Math.round(currentProgress)}%`;
+        }
+        await new Promise(resolve => setTimeout(resolve, duration / steps));
+    }
+}
+
+function updateUploadProgress(percent) {
+    const progressBar = document.querySelector('.progress-bar-fill');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressBar) {
+        progressBar.style.width = `${percent}%`;
+    }
+    if (progressText) {
+        progressText.textContent = `${Math.round(percent)}%`;
+    }
+}
+
+function completeUpload() {
+    // The page will be redirected by the server
+    // Show final success state before redirect
+    updateStatus('requirementsStatus', '✅ Upload successful! Redirecting...', 'success');
+    animateProgress(90, 100);
+}
+
+function handleUploadError(error) {
+    workflowState.isUploading = false;
+    disableFormElements(false);
+    hideUploadingState();
+    
+    const errorMessage = error.message || 'An error occurred during upload';
+    updateStatus('requirementsStatus', `❌ ${errorMessage}`, 'error');
+    
+    // Reset progress
+    updateUploadProgress(0);
+}
+
+function hideUploadingState() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const uploadProgress = document.getElementById('uploadProgress');
+    
+    if (loadingOverlay) {
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
+    }
+    
+    if (uploadProgress) {
+        uploadProgress.style.opacity = '0';
+        setTimeout(() => uploadProgress.classList.add('hidden'), 300);
+    }
+}
+
+async function handleClaimUpload(e) {
+    e.preventDefault();
+    
+    if (workflowState.isUploading || workflowState.isTransitioning) {
+        return;
+    }
+    
+    const form = e.target;
+    const fileInput = form.querySelector('input[type="file"]');
+    const file = fileInput.files[0];
+    const submitButton = form.querySelector('button[type="submit"]');
+    const progressIndicator = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('progressText');
+    
+    if (!file || !validateFile({ target: fileInput })) {
+        return;
+    }
+
+    try {
+        // Set upload states
+        workflowState.isUploading = true;
+        disableFormElements(true);
+        showUploadingState();
+        
+        // Show initial loading state
+        await animateProgress(0, 20);
+        updateStatus('claimStatus', '📤 Processing document...', 'processing');
+
+        const formData = new FormData(form);
+        
+        // Start upload with progress tracking
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', form.action, true);
+        
+        xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+                const percentComplete = (e.loaded / e.total) * 100;
+                updateUploadProgress(percentComplete);
+            }
+        };
+        
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    // Handle successful upload
+                    completeUpload();
+                } else {
+                    // Handle upload error
+                    handleUploadError(new Error('Upload failed'));
+                }
+            }
+        };
+        
+        xhr.send(formData);
+
+    } catch (error) {
+        console.error('Upload error:', error);
+        handleUploadError(error);
+    }
 }
 
 function validateFile(event) {
@@ -79,165 +302,68 @@ function validateFile(event) {
     return false;
 }
 
-async function handleRequirementsUpload(e) {
-    e.preventDefault();
+async function animateProgress(start, end) {
+    const progressBar = document.querySelector('.progress-bar-fill');
+    const progressText = document.getElementById('progressText');
+    const duration = 300;
+    const steps = 20;
+    const increment = (end - start) / steps;
     
-    if (workflowState.isUploading || workflowState.isTransitioning) {
-        return;
-    }
-    
-    const fileInput = document.getElementById('requirementsDoc');
-    const file = fileInput.files[0];
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    const spinner = document.getElementById('requirementsSpinner');
-    const progressIndicator = document.getElementById('requirementsProgress');
-    const progressText = document.getElementById('requirementsProgressText');
-    
-    // Clear previous states
-    updateStatus('requirementsStatus', '', 'processing');
-    resetUploadProgress();
-    
-    if (!validateFile({ target: fileInput })) {
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('processing_type', 'insurance_requirements');
-
-    try {
-        // Set upload states
-        workflowState.isUploading = true;
-        workflowState.isTransitioning = true;
-        disableFormElements(true, submitButton);
-        showUploadingState(spinner, progressIndicator);
-        
-        // Show initial loading state with smooth animation
-        await animateProgress(progressIndicator, progressText, 0, 10);
-        updateStatus('requirementsStatus', '📤 Initiating upload...', 'processing');
-
-        const response = await fetch('/chat/upload', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || `Upload failed with status: ${response.status}`);
-        }
-        
-        // Complete upload progress with animation
-        await animateProgress(progressIndicator, progressText, 90, 100);
-        
-        // Update workflow state and UI with transitions
-        workflowState.requirementsDocId = data.document_id;
-        await completeStepWithAnimation(1);
-        
-        updateStatus('requirementsStatus', 
-            '✅ Requirements document uploaded successfully! You can now proceed to upload your claim document.', 
-            'success'
-        );
-        
-        // Clear file input and scroll to next section with smooth animation
-        fileInput.value = '';
-        await scrollToNextSection('step2Section');
-        
-    } catch (error) {
-        console.error('Upload error:', error);
-        handleUploadError(error, 'requirementsStatus', 1);
-        
-    } finally {
-        cleanupUploadState(spinner, progressIndicator, progressText, submitButton);
-    }
-}
-
-async function handleClaimUpload(e) {
-    e.preventDefault();
-    
-    if (workflowState.isUploading || workflowState.isTransitioning) {
-        return;
-    }
-    
-    const fileInput = document.getElementById('claimDoc');
-    const file = fileInput.files[0];
-    const submitButton = e.target.querySelector('button[type="submit"]');
-    const spinner = document.getElementById('claimSpinner');
-    const progressIndicator = document.getElementById('claimProgress');
-    const progressText = document.getElementById('claimProgressText');
-    
-    // Clear previous states
-    updateStatus('claimStatus', '', 'processing');
-    resetUploadProgress();
-    
-    if (!validateFile({ target: fileInput })) {
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('processing_type', 'insurance_claim');
-    formData.append('requirements_doc_id', workflowState.requirementsDocId);
-
-    try {
-        // Set upload states
-        workflowState.isUploading = true;
-        workflowState.isTransitioning = true;
-        disableFormElements(true, submitButton);
-        showUploadingState(spinner, progressIndicator);
-        
-        // Show initial loading state with smooth animation
-        await animateProgress(progressIndicator, progressText, 0, 10);
-        updateStatus('claimStatus', '📤 Initiating upload...', 'processing');
-
-        const response = await fetch('/chat/upload-claim', {
-            method: 'POST',
-            body: formData
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.error || `Upload failed with status: ${response.status}`);
-        }
-        
-        // Complete upload progress with animation
-        await animateProgress(progressIndicator, progressText, 90, 100);
-        
-        // Update workflow state and UI with transitions
-        workflowState.claimDocId = data.document_id;
-        await completeStepWithAnimation(2);
-        
-        updateStatus('claimStatus', 
-            '✅ Claim document uploaded successfully! You can now proceed with the analysis.', 
-            'success'
-        );
-        
-        // Clear file input and scroll to next section with smooth animation
-        fileInput.value = '';
-        await scrollToNextSection('step3Section');
-        
-    } catch (error) {
-        console.error('Upload error:', error);
-        handleUploadError(error, 'claimStatus', 2);
-        
-    } finally {
-        cleanupUploadState(spinner, progressIndicator, progressText, submitButton);
-    }
-}
-
-async function animateProgress(progressIndicator, progressText, startValue, endValue) {
-    const duration = 500; // Animation duration in milliseconds
-    const steps = 20; // Number of steps in the animation
-    const stepDuration = duration / steps;
-    const increment = (endValue - startValue) / steps;
-
-    progressIndicator.classList.remove('hidden');
-    progressIndicator.style.opacity = '1';
-
     for (let i = 0; i <= steps; i++) {
-        const currentProgress = startValue + (increment * i);
-        progressIndicator.querySelector('.progress-bar-fill').style.width = `${currentProgress}%`;
-        progressText.textContent = `${Math.round(currentProgress)}%`;
-        await new Promise(resolve => setTimeout(resolve, stepDuration));
+        const currentProgress = start + (increment * i);
+        if (progressBar) {
+            progressBar.style.width = `${currentProgress}%`;
+        }
+        if (progressText) {
+            progressText.textContent = `${Math.round(currentProgress)}%`;
+        }
+        await new Promise(resolve => setTimeout(resolve, duration / steps));
+    }
+}
+
+function updateUploadProgress(percent) {
+    const progressBar = document.querySelector('.progress-bar-fill');
+    const progressText = document.getElementById('progressText');
+    
+    if (progressBar) {
+        progressBar.style.width = `${percent}%`;
+    }
+    if (progressText) {
+        progressText.textContent = `${Math.round(percent)}%`;
+    }
+}
+
+function completeUpload() {
+    // The page will be redirected by the server
+    // Show final success state before redirect
+    updateStatus('requirementsStatus', '✅ Upload successful! Redirecting...', 'success');
+    animateProgress(90, 100);
+}
+
+function handleUploadError(error) {
+    workflowState.isUploading = false;
+    disableFormElements(false);
+    hideUploadingState();
+    
+    const errorMessage = error.message || 'An error occurred during upload';
+    updateStatus('requirementsStatus', `❌ ${errorMessage}`, 'error');
+    
+    // Reset progress
+    updateUploadProgress(0);
+}
+
+function hideUploadingState() {
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const uploadProgress = document.getElementById('uploadProgress');
+    
+    if (loadingOverlay) {
+        loadingOverlay.style.opacity = '0';
+        setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
+    }
+    
+    if (uploadProgress) {
+        uploadProgress.style.opacity = '0';
+        setTimeout(() => uploadProgress.classList.add('hidden'), 300);
     }
 }
 
