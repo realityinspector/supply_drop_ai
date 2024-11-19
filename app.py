@@ -9,6 +9,7 @@ from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 import threading
 import time
+import random
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,10 +34,34 @@ app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
 app.config["UPLOAD_FOLDER"] = "uploads"
 
+# Connection state tracking
+connection_state = {
+    'healthy': True,
+    'last_successful_connection': time.time(),
+    'consecutive_failures': 0,
+    'retry_count': 0
+}
+
+def reset_connection_state():
+    """Reset the connection state tracking"""
+    connection_state['healthy'] = True
+    connection_state['consecutive_failures'] = 0
+    connection_state['retry_count'] = 0
+    connection_state['last_successful_connection'] = time.time()
+
+def get_retry_delay():
+    """Calculate retry delay with exponential backoff"""
+    base_delay = 1
+    max_delay = 60
+    jitter = random.uniform(0, 0.1 * base_delay)
+    delay = min(base_delay * (2 ** connection_state['retry_count']) + jitter, max_delay)
+    return delay
+
 # Database connection event handlers
 @event.listens_for(Engine, "connect")
 def connect(dbapi_connection, connection_record):
     logger.info("Database connection established")
+    reset_connection_state()
 
 @event.listens_for(Engine, "engine_connect")
 def engine_connect(connection):
@@ -53,23 +78,61 @@ def checkin(dbapi_connection, connection_record):
 @event.listens_for(Engine, "invalidate")
 def invalidate(dbapi_connection, connection_record, exception):
     logger.warning(f"Database connection invalidated due to error: {exception}")
+    connection_state['healthy'] = False
+    connection_state['consecutive_failures'] += 1
+
+def test_connection():
+    """Test database connection with retry logic"""
+    try:
+        with db.engine.connect() as connection:
+            result = connection.execute(text("SELECT 1")).scalar()
+            if result == 1:
+                reset_connection_state()
+                return True
+    except Exception as e:
+        connection_state['healthy'] = False
+        connection_state['consecutive_failures'] += 1
+        connection_state['retry_count'] += 1
+        logger.error(f"Database connection test failed: {e}")
+        return False
+
+def attempt_recovery():
+    """Attempt to recover database connection"""
+    while not connection_state['healthy']:
+        delay = get_retry_delay()
+        logger.info(f"Attempting connection recovery in {delay:.2f} seconds...")
+        time.sleep(delay)
+        
+        if test_connection():
+            logger.info("Database connection recovered successfully")
+            return True
+        
+        # If we've had too many consecutive failures, log a critical error
+        if connection_state['consecutive_failures'] >= 5:
+            logger.critical("Multiple consecutive connection failures detected")
+    
+    return False
 
 def heartbeat_worker():
-    """Worker function to perform periodic connection tests"""
+    """Worker function to perform periodic connection tests with automatic recovery"""
     while True:
         try:
-            with app.app_context():
-                # Execute a simple query to test the connection
-                # Using pool_pre_ping=True means we don't need to explicitly test
-                # but we'll do a lightweight check anyway for monitoring
-                with db.engine.connect() as connection:
-                    result = connection.execute(text("SELECT 1")).scalar()
-                    if result == 1:
+            if not connection_state['healthy']:
+                attempt_recovery()
+            else:
+                with app.app_context():
+                    if test_connection():
                         logger.debug("Heartbeat: Database connection is alive")
+                    else:
+                        logger.warning("Heartbeat: Database connection test failed")
+                        attempt_recovery()
         except Exception as e:
-            logger.error(f"Heartbeat: Database connection error: {e}")
-            # The pool_pre_ping will handle reconnection on next attempt
-        time.sleep(60)  # Wait for 60 seconds before next heartbeat
+            logger.error(f"Heartbeat: Error during connection check: {e}")
+            connection_state['healthy'] = False
+            attempt_recovery()
+        
+        # Wait for next heartbeat interval
+        time.sleep(60)
 
 db.init_app(app)
 login_manager.init_app(app)
