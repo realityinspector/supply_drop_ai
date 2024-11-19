@@ -8,16 +8,32 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    credits = db.Column(db.Integer, default=50, nullable=False)  # Added credits field
+    credits = db.Column(db.Integer, default=50, nullable=False)
+    
+    # Profile fields
+    full_name = db.Column(db.String(100))
+    organization = db.Column(db.String(100))
+    role = db.Column(db.String(100))
+    preferences = db.Column(db.JSON, default={})
+    last_login = db.Column(db.DateTime)
+    
+    # Relationships
     chats = db.relationship('Chat', backref='user', lazy=True)
     documents = db.relationship('Document', backref='user', lazy=True)
     insurance_requirements = db.relationship('InsuranceRequirement', backref='user', lazy=True)
     insurance_claims = db.relationship('InsuranceClaim', backref='user', lazy=True)
+    reports = db.relationship('Report', backref='user', lazy=True)
 
     def __init__(self, username, email):
         self.username = username
         self.email = email
-        self.credits = 50  # Initialize with 50 credits
+        self.credits = 50
+        self.last_login = datetime.utcnow()
+        self.preferences = {
+            'notification_enabled': True,
+            'theme': 'light',
+            'language': 'en'
+        }
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -33,6 +49,31 @@ class User(UserMixin, db.Model):
 
     def add_credits(self, amount):
         self.credits += amount
+
+    def update_profile(self, data):
+        """Update user profile with provided data"""
+        self.full_name = data.get('full_name', self.full_name)
+        self.organization = data.get('organization', self.organization)
+        self.role = data.get('role', self.role)
+        if 'preferences' in data:
+            self.preferences.update(data['preferences'])
+
+class Report(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    report_type = db.Column(db.String(50), nullable=False)  # summary, analysis, metrics
+    content = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_shared = db.Column(db.Boolean, default=False)
+    shared_with = db.Column(db.JSON, default=[])
+
+    def __init__(self, user_id, title, report_type, content):
+        self.user_id = user_id
+        self.title = title
+        self.report_type = report_type
+        self.content = content
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)

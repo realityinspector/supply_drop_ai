@@ -37,8 +37,10 @@ with app.app_context():
     import models
     from auth import auth_bp
     from chat import chat_bp
+    from profile import profile_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
+    app.register_blueprint(profile_bp)
     
     db.create_all()
