@@ -2328,10 +2328,6 @@ video {
 }
 
 @media (min-width: 768px) {
-  .md\:inline {
-    display: inline;
-  }
-
   .md\:flex {
     display: flex;
   }
