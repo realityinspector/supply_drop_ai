@@ -536,7 +536,6 @@ def upload_claim():
         
         # Check if requirements document exists in session
         if not session.get('requirements_doc_id'):
-            flash('Please upload requirements document first', 'error')
             return jsonify({'error': 'Requirements document not found'}), 400
 
         # Check if user wants to reuse existing document
