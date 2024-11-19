@@ -61,6 +61,8 @@ async function handleRequirementsUpload(e) {
         submitButton.disabled = true;
         spinner.classList.remove('hidden');
         uploadProgress.classList.remove('hidden');
+        uploadProgress.style.transform = 'translateY(0)';
+        uploadProgress.style.opacity = '1';
         updateStatus('requirementsStatus', '📤 Uploading document...', 'processing');
         
         const formData = new FormData(form);
@@ -112,10 +114,17 @@ function handleUploadError(error) {
     const spinner = submitButton.querySelector('.upload-spinner');
     const uploadProgress = document.getElementById('uploadProgress');
     
-    // Reset UI states
+    // Reset UI states with animation
     submitButton.disabled = false;
     spinner.classList.add('hidden');
-    uploadProgress.classList.add('hidden');
+    
+    uploadProgress.style.opacity = '0';
+    uploadProgress.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        uploadProgress.classList.add('hidden');
+        const progressBar = uploadProgress.querySelector('.progress-bar-fill');
+        progressBar.style.width = '0%';
+    }, 300);
     
     // Show error message
     const errorMessage = error.message || 'An error occurred during upload';
