@@ -536,38 +536,34 @@ def upload_claim():
         
         # Check if requirements document exists in session
         if not session.get('requirements_doc_id'):
-            return jsonify({'error': 'Requirements document not found'}), 400
+            flash('Please upload requirements document first', 'error')
+            return redirect(url_for('chat.insurance_step', step=1))
 
         # Check if user wants to reuse existing document
         reuse_doc_id = request.form.get('reuse_document_id')
         if reuse_doc_id:
             document = Document.query.get_or_404(reuse_doc_id)
             if document.user_id != current_user.id:
-                return jsonify({'error': 'Unauthorized'}), 403
+                flash('Unauthorized access to document', 'error')
+                return redirect(url_for('chat.insurance_step', step=2))
                 
             session['insurance_step'] = 3
             session['can_proceed'] = True
             session['claim_doc_id'] = document.id
             session.modified = True
             
-            return jsonify({
-                'message': 'Reusing existing claim document',
-                'document_id': document.id
-            })
+            flash('Successfully reused existing document', 'success')
+            return redirect(url_for('chat.insurance_step', step=3))
         
         # Handle new document upload
         if 'file' not in request.files:
-            return jsonify({
-                'error': 'No file provided',
-                'details': 'Please select a file to upload'
-            }), 400
+            flash('No file provided', 'error')
+            return redirect(url_for('chat.insurance_step', step=2))
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({
-                'error': 'No file selected',
-                'details': 'Please select a valid file'
-            }), 400
+            flash('No file selected', 'error')
+            return redirect(url_for('chat.insurance_step', step=2))
 
         # Process the file and create document
         document = Document(
@@ -580,23 +576,20 @@ def upload_claim():
         db.session.commit()
 
         try:
-            # Process the document content
+            # Process the document
             processed_result = process_document(file, 'text')
             document.content = processed_result.get('raw_text', '')
             document.processed_content = processed_result
             document.processing_status = 'completed'
 
-            # Update session state
             session['insurance_step'] = 3
             session['can_proceed'] = True
             session['claim_doc_id'] = document.id
             session.modified = True
             
             db.session.commit()
-            return jsonify({
-                'message': 'Claim document processed successfully',
-                'document_id': document.id
-            })
+            flash('Claim document processed successfully', 'success')
+            return redirect(url_for('chat.insurance_step', step=3))
 
         except Exception as proc_error:
             document.processing_status = 'failed'
@@ -605,10 +598,8 @@ def upload_claim():
 
     except Exception as e:
         logger.error(f"Error uploading claim: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'details': 'An error occurred while processing your document'
-        }), 500
+        flash(str(e), 'error')
+        return redirect(url_for('chat.insurance_step', step=2))
 
 @chat_bp.route('/insurance/analyze', methods=['POST'])
 @login_required
