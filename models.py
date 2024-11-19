@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(100))
     preferences = db.Column(db.JSON, default={})
     last_login = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     
     # Relationships
     chats = db.relationship('Chat', backref='user', lazy=True)
@@ -29,6 +30,7 @@ class User(UserMixin, db.Model):
         self.email = email
         self.credits = 50
         self.last_login = datetime.utcnow()
+        self.created_at = datetime.utcnow()
         self.preferences = {
             'notification_enabled': True,
             'theme': 'light',
