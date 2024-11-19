@@ -20,7 +20,7 @@
         <div class="bg-white p-6 rounded-lg shadow-xl">
             <div class="flex flex-col items-center">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                <p class="mt-4 text-lg font-semibold text-gray-700">Processing document...</p>
+                <p id="loadingText" class="mt-4 text-lg font-semibold text-gray-700">Processing document...</p>
             </div>
         </div>
     </div>
@@ -59,21 +59,27 @@
             
             <!-- Upload Progress -->
             <div id="uploadProgress" class="mt-4 hidden">
-                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                    <div class="progress-bar-fill bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
+                <div class="relative pt-1">
+                    <div class="flex mb-2 items-center justify-between">
+                        <div>
+                            <span id="progressText" class="text-xs font-semibold inline-block text-blue-600">0%</span>
+                        </div>
+                    </div>
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                        <div class="progress-bar-fill shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-300 ease-out" style="width: 0%"></div>
+                    </div>
                 </div>
-                <p id="progressText" class="text-sm text-gray-600 mt-1 text-right">0%</p>
             </div>
             
             <!-- Status Message -->
-            <p id="requirementsStatus" class="mt-2 text-sm"></p>
+            <p id="requirementsStatus" class="mt-2 text-sm status-message"></p>
         </div>
         
         <button type="submit" 
                 class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200 relative">
             <span class="relative inline-flex items-center">
                 Upload Requirements
-                <span class="absolute right-0 -mr-1 h-4 w-4 animate-ping rounded-full bg-white opacity-75 hidden"></span>
+                <span class="upload-spinner absolute right-0 -mr-1 h-4 w-4 animate-ping rounded-full bg-white opacity-75 hidden"></span>
             </span>
         </button>
     </form>
@@ -110,18 +116,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     const formData = new FormData();
                     formData.append('reuse_document_id', docId);
 
+                    // Show loading state
+                    const loadingOverlay = document.getElementById('loadingOverlay');
+                    loadingOverlay.classList.remove('hidden');
+                    loadingOverlay.style.opacity = '1';
+
                     fetch('/insurance/upload-requirements', {
                         method: 'POST',
                         body: formData
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.document_id) {
-                            window.location.href = '/insurance/step/2';
+                    .then(response => {
+                        if (response.redirected) {
+                            window.location.href = response.url;
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
+                        loadingOverlay.style.opacity = '0';
+                        setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
                         alert('Failed to reuse document. Please try again.');
                     });
                 });
