@@ -141,7 +141,7 @@ async function handleRequirementsUpload(e) {
         // Clear file input and scroll to next section with smooth animation
         fileInput.value = '';
         await scrollToNextSection('step2Section');
-
+        
     } catch (error) {
         console.error('Upload error:', error);
         handleUploadError(error, 'requirementsStatus', 1);
@@ -214,7 +214,7 @@ async function handleClaimUpload(e) {
         // Clear file input and scroll to next section with smooth animation
         fileInput.value = '';
         await scrollToNextSection('step3Section');
-
+        
     } catch (error) {
         console.error('Upload error:', error);
         handleUploadError(error, 'claimStatus', 2);
@@ -229,6 +229,9 @@ async function animateProgress(progressIndicator, progressText, startValue, endV
     const steps = 20; // Number of steps in the animation
     const stepDuration = duration / steps;
     const increment = (endValue - startValue) / steps;
+
+    progressIndicator.classList.remove('hidden');
+    progressIndicator.style.opacity = '1';
 
     for (let i = 0; i <= steps; i++) {
         const currentProgress = startValue + (increment * i);
@@ -274,8 +277,6 @@ async function enableStepWithAnimation(step) {
     // Set initial state
     section.style.opacity = '0.5';
     section.style.transform = 'translateY(10px)';
-    
-    // Remove disabled state
     section.classList.remove('opacity-50');
     
     // Add transition
@@ -301,9 +302,6 @@ async function enableStepWithAnimation(step) {
             '<span class="text-green-600">✓ All documents uploaded!</span><br>' +
             'Select an analysis option to process your documents.';
     }
-    
-    // Wait for animation to complete
-    await new Promise(resolve => setTimeout(resolve, 300));
 }
 
 function handleUploadError(error, statusId, step) {
@@ -362,29 +360,18 @@ async function scrollToNextSection(sectionId) {
     nextSection.style.transition = 'all 0.3s ease-in-out';
 }
 
-async function checkExistingDocuments() {
-    try {
-        const response = await fetch('/chat/workflow-state');
-        if (!response.ok) {
-            throw new Error('Failed to fetch workflow state');
-        }
-        const data = await response.json();
-        if (data.requirements_doc_id) {
-            workflowState.requirementsDocId = data.requirements_doc_id;
-            completeStep(1);
-        }
-        if (data.claim_doc_id) {
-            workflowState.claimDocId = data.claim_doc_id;
-            completeStep(2);
-        }
-    } catch (error) {
-        console.error('Error checking workflow state:', error);
-        updateStatus('requirementsStatus', '❌ Error checking workflow state', 'error');
-    }
+function updateStatus(elementId, message, type) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    element.textContent = message;
+    element.className = 'status-message mt-2 ' + (type === 'error' ? 'text-red-600' : 
+                                                 type === 'success' ? 'text-green-600' : 
+                                                 'text-blue-600');
 }
 
 function disableFormElements(disabled, submitButton) {
-    const elements = document.querySelectorAll('#requirementsForm input, #requirementsForm button');
+    const elements = document.querySelectorAll('input[type="file"], button[type="submit"]');
     elements.forEach(element => {
         element.disabled = disabled;
     });
@@ -393,6 +380,75 @@ function disableFormElements(disabled, submitButton) {
     }
 }
 
+function resetUploadProgress() {
+    workflowState.uploadProgress = 0;
+    document.querySelectorAll('.progress-bar-fill').forEach(bar => {
+        bar.style.width = '0%';
+    });
+    document.querySelectorAll('[id$="ProgressText"]').forEach(text => {
+        text.textContent = '';
+    });
+}
+
+function resetStep(step) {
+    if (step === 1) {
+        workflowState.step1Completed = false;
+        workflowState.requirementsDocId = null;
+    } else if (step === 2) {
+        workflowState.step2Completed = false;
+        workflowState.claimDocId = null;
+    }
+}
+
+function disableStep(step) {
+    const section = document.getElementById(`step${step}Section`);
+    if (section) {
+        section.classList.add('opacity-50');
+        const inputs = section.querySelectorAll('input, button');
+        inputs.forEach(input => input.disabled = true);
+    }
+}
+
+function enableStep(step) {
+    const section = document.getElementById(`step${step}Section`);
+    if (section) {
+        section.classList.remove('opacity-50');
+        const inputs = section.querySelectorAll('input, button');
+        inputs.forEach(input => input.disabled = false);
+    }
+}
+
+function updateProgressBar(step) {
+    const progressBar = document.getElementById('progressBar');
+    if (progressBar) {
+        const width = (step / 3) * 100;
+        progressBar.style.width = `${width}%`;
+    }
+}
+
+async function checkExistingDocuments() {
+    try {
+        const response = await fetch('/chat/workflow-state');
+        if (!response.ok) {
+            throw new Error('Failed to fetch workflow state');
+        }
+        const data = await response.json();
+        
+        if (data.requirements_doc_id) {
+            workflowState.requirementsDocId = data.requirements_doc_id;
+            await completeStepWithAnimation(1);
+        }
+        if (data.claim_doc_id) {
+            workflowState.claimDocId = data.claim_doc_id;
+            await completeStepWithAnimation(2);
+        }
+    } catch (error) {
+        console.error('Error checking workflow state:', error);
+        updateStatus('requirementsStatus', '❌ Error checking workflow state', 'error');
+    }
+}
+
+// Analysis functions
 async function analyzeDocuments(analysisType) {
     if (!workflowState.step1Completed || !workflowState.step2Completed) {
         updateStatus('analysisStatus', '⚠️ Please complete both document uploads first', 'error');
@@ -433,204 +489,23 @@ async function analyzeDocuments(analysisType) {
     }
 }
 
-function completeStep(step) {
-    const indicator = document.getElementById(`step${step}Indicator`);
-    indicator.classList.remove('bg-gray-300');
-    indicator.classList.add('bg-blue-600');
-    
-    // Add checkmark icon to completed step
-    indicator.innerHTML = '✓';
-
-    if (step === 1) {
-        workflowState.step1Completed = true;
-        enableStep(2);
-        updateProgressBar(2);
-        document.getElementById('step2Guidance').innerHTML = 
-            '<span class="text-green-600">✓ Requirements uploaded!</span><br>' +
-            'Please upload your claim document for analysis.';
-    } else if (step === 2) {
-        workflowState.step2Completed = true;
-        enableStep(3);
-        updateProgressBar(3);
-        document.getElementById('step3Guidance').innerHTML = 
-            '<span class="text-green-600">✓ All documents uploaded!</span><br>' +
-            'Select an analysis option to process your documents.';
-    }
-}
-
-function resetStep(step) {
-    const indicator = document.getElementById(`step${step}Indicator`);
-    indicator.classList.remove('bg-blue-600');
-    indicator.classList.add('bg-gray-300');
-    indicator.textContent = step;
-
-    if (step === 1) {
-        workflowState.step1Completed = false;
-        workflowState.requirementsDocId = null;
-        disableStep(2);
-        disableStep(3);
-        updateProgressBar(1);
-    } else if (step === 2) {
-        workflowState.step2Completed = false;
-        workflowState.claimDocId = null;
-        disableStep(3);
-        updateProgressBar(2);
-    }
-}
-
-function enableStep(step) {
-    const section = document.getElementById(`step${step}Section`);
-    section.classList.remove('opacity-50');
-    
-    // Add transition effect
-    section.style.transition = 'opacity 0.3s ease-in-out';
-    
-    if (step === 2) {
-        document.getElementById('claimDoc').disabled = false;
-        document.querySelector('#claimForm button[type="submit"]').disabled = false;
-    } else if (step === 3) {
-        document.querySelectorAll('.analysis-btn').forEach(btn => {
-            btn.disabled = false;
-        });
-    }
-}
-
-function disableStep(step) {
-    const section = document.getElementById(`step${step}Section`);
-    section.classList.add('opacity-50');
-    
-    if (step === 2) {
-        document.getElementById('claimDoc').disabled = true;
-        document.querySelector('#claimForm button[type="submit"]').disabled = true;
-        document.getElementById('step2Guidance').textContent = 'Complete Step 1 to unlock this step.';
-    } else if (step === 3) {
-        document.querySelectorAll('.analysis-btn').forEach(btn => {
-            btn.disabled = true;
-        });
-        document.getElementById('step3Guidance').textContent = 'Complete Steps 1 and 2 to unlock analysis options.';
-    }
-}
-
-function updateProgressBar(step) {
-    const progressBar = document.getElementById('progressBar');
-    const newWidth = `${(step / 3) * 100}%`;
-    
-    // Add smooth transition
-    progressBar.style.transition = 'width 0.5s ease-in-out';
-    progressBar.style.width = newWidth;
-}
-
-function updateProgressIndicator(elementId, show) {
-    const progress = document.getElementById(elementId);
-    const progressFill = progress.querySelector('.progress-bar-fill');
-    
-    if (show) {
-        progress.classList.remove('hidden');
-        progressFill.style.width = '100%';
-    } else {
-        progress.classList.add('hidden');
-        progressFill.style.width = '0%';
-    }
-}
-
-function updateStatus(elementId, message, type = 'processing') {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.textContent = message;
-        element.className = `status-message status-${type}`;
-        
-        // Add shake animation for errors
-        if (type === 'error') {
-            element.classList.add('animate-shake');
-            // Remove animation class after it completes
-            setTimeout(() => element.classList.remove('animate-shake'), 500);
-        }
-    }
-}
-
-// Loading overlay management
+// Loading overlay functions
 function showLoading(message = 'Processing...') {
     const overlay = document.getElementById('loadingOverlay');
     const loadingText = document.getElementById('loadingText');
-    
-    if (!overlay || !loadingText) {
-        console.error('Loading overlay elements not found');
-        return;
+    if (overlay && loadingText) {
+        loadingText.textContent = message;
+        overlay.classList.remove('hidden');
+        overlay.style.opacity = '1';
     }
-    
-    // Store current state of interactive elements
-    document.querySelectorAll('button, input, select').forEach(element => {
-        if (!element.closest('#loadingOverlay')) {
-            element.dataset.wasDisabled = element.disabled;
-            element.disabled = true;
-        }
-    });
-    
-    // Set message and show overlay with transition
-    loadingText.textContent = message;
-    
-    // Ensure proper transition
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '0';
-    overlay.style.transition = 'opacity 0.3s ease-in-out';
-    
-    // Force reflow to ensure transition works
-    overlay.offsetHeight;
-    
-    // Show overlay
-    overlay.style.opacity = '1';
-    overlay.classList.add('active');
 }
 
 function hideLoading() {
     const overlay = document.getElementById('loadingOverlay');
-    
-    if (!overlay) {
-        console.error('Loading overlay element not found');
-        return;
+    if (overlay) {
+        overlay.style.opacity = '0';
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
     }
-    
-    // Set up transition
-    overlay.style.transition = 'opacity 0.3s ease-in-out';
-    overlay.style.opacity = '0';
-    
-    // Wait for transition to complete before hiding
-    const handleTransitionEnd = () => {
-        overlay.style.display = 'none';
-        overlay.classList.remove('active');
-        overlay.removeEventListener('transitionend', handleTransitionEnd);
-        
-        // Restore interactive elements to their previous state
-        document.querySelectorAll('button, input, select').forEach(element => {
-            if (!element.closest('#loadingOverlay')) {
-                const wasDisabled = element.dataset.wasDisabled === 'true';
-                element.disabled = wasDisabled;
-                delete element.dataset.wasDisabled;
-            }
-        });
-    };
-    
-    overlay.addEventListener('transitionend', handleTransitionEnd);
-}
-
-function resetUploadProgress() {
-    workflowState.uploadProgress = 0;
-    const progressBar = document.getElementById('requirementsProgress');
-    if (progressBar) {
-        progressBar.classList.add('hidden');
-        const fill = progressBar.querySelector('.progress-bar-fill');
-        if (fill) {
-            fill.style.transition = 'width 0.3s ease-in-out';
-            fill.style.width = '0%';
-        }
-        const text = progressBar.querySelector('#requirementsProgressText');
-        if (text) {
-            text.textContent = '';
-        }
-    }
-}
-
-// Export workflowState for testing purposes
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { workflowState };
 }
