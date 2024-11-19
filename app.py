@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 import logging
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
@@ -133,6 +133,11 @@ def heartbeat_worker():
         
         # Wait for next heartbeat interval
         time.sleep(60)
+
+# Add video player route
+@app.route('/video/demo_video')
+def video_player():
+    return render_template('video_player.html')
 
 db.init_app(app)
 login_manager.init_app(app)
