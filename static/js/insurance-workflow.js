@@ -49,6 +49,7 @@ async function handleRequirementsUpload(e) {
     const progressBar = uploadProgress.querySelector('.progress-bar-fill');
     const progressText = document.getElementById('progressText');
     const spinner = submitButton.querySelector('.upload-spinner');
+    const loadingOverlay = document.getElementById('loadingOverlay');
     
     if (!file || !validateFile({ target: fileInput })) {
         return;
@@ -64,6 +65,10 @@ async function handleRequirementsUpload(e) {
         uploadProgress.style.transform = 'translateY(0)';
         uploadProgress.style.opacity = '1';
         updateStatus('requirementsStatus', '📤 Uploading document...', 'processing');
+        
+        // Show loading overlay
+        loadingOverlay.classList.remove('hidden');
+        loadingOverlay.style.opacity = '1';
         
         const formData = new FormData(form);
         
@@ -113,6 +118,7 @@ function handleUploadError(error) {
     const submitButton = document.querySelector('#requirementsForm button[type="submit"]');
     const spinner = submitButton.querySelector('.upload-spinner');
     const uploadProgress = document.getElementById('uploadProgress');
+    const loadingOverlay = document.getElementById('loadingOverlay');
     
     // Reset UI states with animation
     submitButton.disabled = false;
@@ -120,7 +126,11 @@ function handleUploadError(error) {
     
     uploadProgress.style.opacity = '0';
     uploadProgress.style.transform = 'translateY(-10px)';
+    
+    // Hide loading overlay
+    loadingOverlay.style.opacity = '0';
     setTimeout(() => {
+        loadingOverlay.classList.add('hidden');
         uploadProgress.classList.add('hidden');
         const progressBar = uploadProgress.querySelector('.progress-bar-fill');
         progressBar.style.width = '0%';
@@ -214,68 +224,6 @@ async function checkExistingDocuments() {
     } catch (error) {
         console.error('Error checking workflow state:', error);
         updateStatus('requirementsStatus', '❌ Error checking workflow state', 'error');
-    }
-}
-
-// Analysis functions
-async function analyzeDocuments(analysisType) {
-    if (!workflowState.step1Completed || !workflowState.step2Completed) {
-        updateStatus('analysisStatus', '⚠️ Please complete both document uploads first', 'error');
-        return;
-    }
-
-    try {
-        showLoading('Analyzing documents...');
-        updateStatus('analysisStatus', 'Processing analysis...', 'processing');
-        
-        const response = await fetch('/chat/insurance-analysis', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                claim_document_id: workflowState.claimDocId,
-                requirement_document_id: workflowState.requirementsDocId,
-                analysis_type: analysisType
-            })
-        });
-
-        const data = await response.json();
-        if (response.ok) {
-            updateStatus('analysisStatus', '✅ Analysis completed successfully', 'success');
-            // Redirect to chat view with the new analysis
-            window.location.href = `/chat?chat_id=${data.chat_id}`;
-        } else {
-            throw new Error(data.error || 'Analysis failed');
-        }
-    } catch (error) {
-        updateStatus('analysisStatus', 
-            `❌ ${error.message || 'Error during analysis. Please try again.'}`, 
-            'error'
-        );
-    } finally {
-        hideLoading();
-    }
-}
-
-// Loading overlay functions
-function showLoading(message = 'Processing...') {
-    const overlay = document.getElementById('loadingOverlay');
-    const loadingText = document.getElementById('loadingText');
-    if (overlay && loadingText) {
-        loadingText.textContent = message;
-        overlay.classList.remove('hidden');
-        overlay.style.opacity = '1';
-    }
-}
-
-function hideLoading() {
-    const overlay = document.getElementById('loadingOverlay');
-    if (overlay) {
-        overlay.style.opacity = '0';
-        setTimeout(() => {
-            overlay.classList.add('hidden');
-        }, 300);
     }
 }
 
