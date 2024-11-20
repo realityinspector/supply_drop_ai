@@ -4,7 +4,7 @@ import logging
 from openai import OpenAI
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session, Response
 from flask_login import login_required, current_user
-from app import db
+from extensions import db
 from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
 from document_processor import process_document, analyze_insurance_claim
 import time

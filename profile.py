@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, render_template
 from flask_login import login_required, current_user
-from app import db
+from extensions import db
 from models import User, Report, Chat, Document
 from datetime import datetime
 import json

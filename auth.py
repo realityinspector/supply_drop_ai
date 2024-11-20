@@ -1,13 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from app import db, login_manager
+from extensions import db
 from models import User
 
 auth_bp = Blueprint('auth', __name__)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, int(user_id))
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():

@@ -1,177 +1,134 @@
 import os
 from datetime import datetime
 import logging
-from flask import Flask, render_template
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
-from flask_login import LoginManager
-from sqlalchemy import event, text
-from sqlalchemy.engine import Engine
-import threading
 import time
-import random
+from flask import Flask, render_template
+import threading
+from extensions import init_extensions, db
+from database import test_connection, attempt_recovery, connection_state, CONNECTION_MONITOR
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class Base(DeclarativeBase):
-    pass
 
-db = SQLAlchemy(model_class=Base)
-login_manager = LoginManager()
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,  # Recycle connections every 5 minutes
-    "pool_pre_ping": True,  # Enable connection testing before use
-    "pool_size": 10,  # Maximum number of persistent connections
-    "max_overflow": 20,  # Maximum number of connections that can be created beyond pool_size
-    "pool_timeout": 30,  # Timeout for getting a connection from the pool
-}
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
-app.config["UPLOAD_FOLDER"] = "uploads"
-
-# Connection state tracking
-connection_state = {
-    'healthy': True,
-    'last_successful_connection': time.time(),
-    'consecutive_failures': 0,
-    'retry_count': 0
-}
-
-def reset_connection_state():
-    """Reset the connection state tracking"""
-    connection_state['healthy'] = True
-    connection_state['consecutive_failures'] = 0
-    connection_state['retry_count'] = 0
-    connection_state['last_successful_connection'] = time.time()
-
-def get_retry_delay():
-    """Calculate retry delay with exponential backoff"""
-    base_delay = 1
-    max_delay = 60
-    jitter = random.uniform(0, 0.1 * base_delay)
-    delay = min(base_delay * (2 ** connection_state['retry_count']) + jitter, max_delay)
-    return delay
-
-# Database connection event handlers
-@event.listens_for(Engine, "connect")
-def connect(dbapi_connection, connection_record):
-    logger.info("Database connection established")
-    reset_connection_state()
-
-@event.listens_for(Engine, "engine_connect")
-def engine_connect(connection):
-    logger.info("Engine connection established")
-
-@event.listens_for(Engine, "checkout")
-def checkout(dbapi_connection, connection_record, connection_proxy):
-    logger.debug("Database connection checked out from pool")
-
-@event.listens_for(Engine, "checkin")
-def checkin(dbapi_connection, connection_record):
-    logger.debug("Database connection returned to pool")
-
-@event.listens_for(Engine, "invalidate")
-def invalidate(dbapi_connection, connection_record, exception):
-    logger.warning(f"Database connection invalidated due to error: {exception}")
-    connection_state['healthy'] = False
-    connection_state['consecutive_failures'] += 1
-
-def test_connection():
-    """Test database connection with retry logic"""
-    try:
-        with db.engine.connect() as connection:
-            result = connection.execute(text("SELECT 1")).scalar()
-            if result == 1:
-                reset_connection_state()
-                return True
-    except Exception as e:
-        connection_state['healthy'] = False
-        connection_state['consecutive_failures'] += 1
-        connection_state['retry_count'] += 1
-        logger.error(f"Database connection test failed: {e}")
-        return False
-
-def attempt_recovery():
-    """Attempt to recover database connection"""
-    while not connection_state['healthy']:
-        delay = get_retry_delay()
-        logger.info(f"Attempting connection recovery in {delay:.2f} seconds...")
-        time.sleep(delay)
-        
-        if test_connection():
-            logger.info("Database connection recovered successfully")
-            return True
-        
-        # If we've had too many consecutive failures, log a critical error
-        if connection_state['consecutive_failures'] >= 5:
-            logger.critical("Multiple consecutive connection failures detected")
-    
-    return False
-
-def heartbeat_worker():
-    """Worker function to perform periodic connection tests with automatic recovery"""
+def heartbeat_worker(app):
+    """Enhanced worker function to perform periodic connection tests with smart recovery"""
+    consecutive_failures = 0
     while True:
         try:
-            if not connection_state['healthy']:
-                attempt_recovery()
-            else:
-                with app.app_context():
-                    if test_connection():
-                        logger.debug("Heartbeat: Database connection is alive")
+            with app.app_context():
+                from database import db_manager, connection_state, CONNECTION_MONITOR
+                
+                current_state = "unhealthy" if not db_manager.connection_state['healthy'] else "healthy"
+                logger.info(f"Heartbeat check starting. Current state: {current_state}")
+                
+                if not db_manager.connection_state['healthy']:
+                    # Aggressive recovery mode with exponential backoff
+                    if consecutive_failures > CONNECTION_MONITOR['CRITICAL_FAILURE_THRESHOLD']:
+                        logger.warning("Critical failure threshold reached - implementing circuit breaker")
+                        time.sleep(min(CONNECTION_MONITOR['BASE_DELAY'] * (2 ** consecutive_failures), 
+                                    CONNECTION_MONITOR['MAX_DELAY']))
+                    
+                    if db_manager.attempt_recovery(db):
+                        logger.info("Recovery successful - resuming normal operation")
+                        consecutive_failures = 0
                     else:
-                        logger.warning("Heartbeat: Database connection test failed")
-                        attempt_recovery()
+                        consecutive_failures += 1
+                        logger.error(
+                            "Recovery failed - system in degraded state\n"
+                            f"Last error: {db_manager.connection_state['last_error']}\n"
+                            f"Total attempts: {db_manager.connection_state['total_reconnect_attempts']}\n"
+                            f"Consecutive failures: {consecutive_failures}"
+                        )
+                else:
+                    # Enhanced proactive health check with detailed monitoring
+                    try:
+                        if db_manager.test_connection(db):
+                            logger.debug(
+                                "Heartbeat: Database connection is alive\n"
+                                f"Current pool size: {db_manager.connection_state['pool_size_current']}\n"
+                                f"Connection latency: {db_manager.connection_state['connection_latency']:.3f}s\n"
+                                f"Cache hit ratio: {db_manager.connection_state.get('transaction_stats', {}).get('cache_hit_ratio', 0):.2%}"
+                            )
+                            consecutive_failures = 0
+                        else:
+                            logger.warning("Heartbeat: Database connection test failed - initiating recovery")
+                            db_manager.attempt_recovery(db)
+                            consecutive_failures += 1
+                    except Exception as e:
+                        logger.error(f"Health check failed: {str(e)}")
+                        consecutive_failures += 1
+                        db_manager.connection_state['healthy'] = False
+                
+                # Dynamic health check interval based on system health
+                if consecutive_failures > 0:
+                    # More frequent checks when there are issues, with exponential backoff for severe cases
+                    check_interval = max(
+                        CONNECTION_MONITOR['HEALTH_CHECK_INTERVAL'] // (2 ** min(consecutive_failures, 3)),
+                        CONNECTION_MONITOR['BASE_DELAY']
+                    )
+                else:
+                    check_interval = CONNECTION_MONITOR['HEALTH_CHECK_INTERVAL']
+                
         except Exception as e:
-            logger.error(f"Heartbeat: Error during connection check: {e}")
+            logger.error(
+                f"Heartbeat: Critical error during connection check: {e}\n"
+                "Initiating emergency recovery procedure"
+            )
             connection_state['healthy'] = False
+            connection_state['last_error'] = str(e)
             attempt_recovery()
+            check_interval = CONNECTION_MONITOR['BASE_DELAY']
         
         # Wait for next heartbeat interval
-        time.sleep(60)
+        time.sleep(check_interval)
 
-# Add video player route
-@app.route('/video/demo_video')
-def video_player():
-    return render_template('video_player.html')
+def create_app():
+    """Application factory function"""
+    # Initialize Flask app
+    app = Flask(__name__)
+    app.secret_key = os.environ.get("FLASK_SECRET_KEY") or "a secret key"
+    
+    # Add configuration for heartbeat
+    app.config['_is_heartbeat_initialized'] = False
+    app.config['heartbeat_thread'] = None
+    
+    # Add video player route
+    @app.route('/video/demo_video')
+    def video_player():
+        return render_template('video_player.html')
+    # Database configuration moved to extensions.py
+    app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max file size
+    app.config["UPLOAD_FOLDER"] = "uploads"
 
-db.init_app(app)
-login_manager.init_app(app)
-login_manager.login_view = "auth.login"
+    # Initialize extensions with enhanced monitoring
+    init_extensions(app)
 
-# Ensure upload directory exists
-os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    # Ensure upload directory exists
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
-# Add template context processor for datetime
-@app.context_processor
-def inject_now():
-    return {'now': datetime.utcnow()}
+    # Register template context processor
+    @app.context_processor
+    def inject_now():
+        return {'now': datetime.utcnow()}
 
-# Initialize heartbeat thread
-heartbeat_thread = None
-_is_heartbeat_initialized = False
+    def init_heartbeat(app):
+        """Initialize the database heartbeat mechanism"""
+        if not app.config['_is_heartbeat_initialized']:
+            app.config['heartbeat_thread'] = threading.Thread(target=lambda: heartbeat_worker(app), daemon=True)
+            app.config['heartbeat_thread'].start()
+            app.config['_is_heartbeat_initialized'] = True
+            logger.info("Database heartbeat mechanism started")
 
-def init_heartbeat():
-    """Initialize the database heartbeat mechanism"""
-    global heartbeat_thread, _is_heartbeat_initialized
-    if not _is_heartbeat_initialized:
-        heartbeat_thread = threading.Thread(target=heartbeat_worker, daemon=True)
-        heartbeat_thread.start()
-        _is_heartbeat_initialized = True
-        logger.info("Database heartbeat mechanism started")
+    @app.before_request
+    def before_request():
+        """Initialize heartbeat before the first request if not in debug mode"""
+        if not app.debug and not app.config['_is_heartbeat_initialized']:
+            init_heartbeat(app)
 
-@app.before_request
-def before_request():
-    """Initialize heartbeat before the first request if not in debug mode"""
-    if not app.debug and not _is_heartbeat_initialized:
-        init_heartbeat()
-
-with app.app_context():
-    import models
+    # Register blueprints
     from auth import auth_bp
     from chat import chat_bp
     from profile import profile_bp
@@ -179,10 +136,21 @@ with app.app_context():
     app.register_blueprint(auth_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(profile_bp)
-    
+
     # Initialize database tables
-    db.create_all()
-    
-    # Start heartbeat mechanism immediately if in production
-    if not app.debug:
-        init_heartbeat()
+    with app.app_context():
+        db.create_all()
+        
+        # Start heartbeat mechanism immediately if in production
+        if not app.debug and not app.config['_is_heartbeat_initialized']:
+            init_heartbeat(app)
+
+    return app
+
+# Create application instance
+app = create_app()
+
+# Remove duplicate route as it's already defined in create_app()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
