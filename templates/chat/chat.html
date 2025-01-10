@@ -1,0 +1,28 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            if (e.shiftKey) {
+                // Allow new line with Shift+Enter
+                return;
+            }
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    function sendMessage() {
+        if (messageInput.value.trim() !== '') {
+            messageForm.submit();
+        }
+    }
+});
+</script>

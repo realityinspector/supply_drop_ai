@@ -1,24 +1,26 @@
 {% if current_user.is_authenticated %}
+<nav class="bg-black text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <a href="{{ url_for('chat.index') }}" class="flex items-center">
-                        <span class="text-white font-bold text-xl">Supply Drop AI</span>
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="Supply Drop AI Logo" class="h-8 w-auto">
+                       
                     </a>
                 </div>
                 <div class="hidden md:block">
                     <div class="ml-10 flex items-baseline space-x-4">
                         <a href="{{ url_for('chat.documents') }}" 
-                           class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                           class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                             Documents
                         </a>
                         <a href="{{ url_for('chat.chat_page') }}" 
-                           class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                           class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                             Past Chats
                         </a>
                         <a href="{{ url_for('chat.insurance_wizard') }}" 
-                           class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                           class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                             Insurance Wizard
                         </a>
                     </div>
@@ -27,11 +29,11 @@
             <div class="hidden md:block">
                 <div class="ml-4 flex items-center md:ml-6">
                     <a href="{{ url_for('profile.view_profile') }}" 
-                       class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                       class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                         {{ current_user.username }}
                     </a>
                     <a href="{{ url_for('auth.logout') }}" 
-                       class="text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium ml-2">
+                       class="text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium ml-2 transition duration-150 ease-in-out">
                         Logout
                     </a>
                 </div>
@@ -40,7 +42,7 @@
             <!-- Mobile menu button -->
             <div class="md:hidden">
                 <button type="button" 
-                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition duration-150 ease-in-out"
                         aria-controls="mobile-menu"
                         aria-expanded="false"
                         onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
@@ -57,43 +59,46 @@
     <div class="hidden md:hidden" id="mobile-menu">
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <a href="{{ url_for('chat.documents') }}" 
-               class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+               class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Documents
             </a>
             <a href="{{ url_for('chat.chat_page') }}" 
-               class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+               class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Past Chats
             </a>
             <a href="{{ url_for('chat.insurance_wizard') }}" 
-               class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+               class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Insurance Wizard
             </a>
             <a href="{{ url_for('profile.view_profile') }}" 
-               class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+               class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 {{ current_user.username }}
             </a>
             <a href="{{ url_for('auth.logout') }}" 
-               class="text-gray-300 hover:bg-red-600 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+               class="text-gray-300 hover:bg-red-600 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Logout
             </a>
         </div>
     </div>
+</nav>
 {% else %}
+<nav class="bg-black text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
             <div class="flex-shrink-0">
-                <a href="{{ url_for('main.index') }}" class="flex items-center">
-                    <span class="text-white font-bold text-xl">Supply Drop AI</span>
+                <a href="{{ url_for('chat.chat_page') }}" class="flex items-center">
+                    <img class="h-8 w-auto" src="{{ url_for('static', filename='logo.png') }}" alt="Supply Drop">
+                    <span class="ml-2 font-semibold text-lg">Supply Drop</span>
                 </a>
             </div>
             <div class="hidden md:block">
                 <div class="ml-4 flex items-center md:ml-6 space-x-4">
                     <a href="{{ url_for('auth.login') }}" 
-                       class="text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-2 rounded-md text-sm font-medium">
+                       class="text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                         Login
                     </a>
-                    <a href="{{ url_for('auth.register') }}" 
-                       class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium">
+                    <a href="{{ url_for('auth.signup') }}" 
+                       class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition duration-150 ease-in-out">
                         Register
                     </a>
                 </div>
@@ -102,7 +107,7 @@
             <!-- Mobile menu button -->
             <div class="md:hidden">
                 <button type="button" 
-                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition duration-150 ease-in-out"
                         aria-controls="mobile-menu-auth"
                         aria-expanded="false"
                         onclick="document.getElementById('mobile-menu-auth').classList.toggle('hidden')">
@@ -119,16 +124,22 @@
     <div class="hidden md:hidden" id="mobile-menu-auth">
         <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             <a href="{{ url_for('auth.login') }}" 
-               class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+               class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Login
             </a>
-            <a href="{{ url_for('auth.register') }}" 
-               class="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium">
+            <a href="{{ url_for('auth.signup') }}" 
+               class="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium transition duration-150 ease-in-out">
                 Register
             </a>
         </div>
     </div>
+</nav>
 {% endif %}
+
+<!-- Alpha software banner -->
+<div class="bg-yellow-500 text-black text-center py-2 px-4">
+    <p class="text-sm font-medium">This is alpha software. Use with caution.</p>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from openai import OpenAI
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session, Response
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session, Response, abort
 from flask_login import login_required, current_user
 from extensions import db
 from models import Chat, Message, Document, InsuranceRequirement, InsuranceClaim
@@ -20,6 +20,23 @@ logger = logging.getLogger(__name__)
 
 chat_bp = Blueprint('chat', __name__)
 client = OpenAI()
+
+# Custom Jinja filters
+@chat_bp.app_template_filter('from_json')
+def from_json(value):
+    try:
+        return json.loads(value)
+    except:
+        return value
+
+@chat_bp.app_template_filter('pretty_json')
+def pretty_json(value):
+    try:
+        if isinstance(value, str):
+            return json.dumps(json.loads(value), indent=2)
+        return json.dumps(value, indent=2)
+    except:
+        return value
 
 def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
@@ -246,46 +263,127 @@ def send_message(chat_id):
         if not content:
             return jsonify({'error': 'Message content is required'}), 400
 
-        message = Message(
-            chat_id=chat_id,
-            content=content,
-            role='user'
+        # Get conversation history
+        messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
+        conversation_history = [{"role": msg.role, "content": msg.content} for msg in messages]
+
+        # Get document context
+        documents = Document.query.filter_by(user_id=current_user.id).all()
+        document_context = [{"filename": doc.filename, "content": doc.content} for doc in documents]
+
+        # Check character limit
+        total_chars = sum(len(msg["content"]) for msg in conversation_history) + len(content)
+        if total_chars > 250000:
+            new_chat_url = url_for('chat.new_chat')
+            error_message = f"The conversation has exceeded 250,000 characters. Please start a new conversation. <a href='{new_chat_url}'>Click here to start a new chat</a>"
+            return jsonify({'error': error_message, 'warning': True}), 413
+
+        # Prepare system message with document context
+        system_message = f"You are an AI assistant. Here's the context from the user's documents:\n\n"
+        for doc in document_context:
+            system_message += f"Document: {doc['filename']}\nContent: {doc['content'][:500]}...\n\n"
+
+        # Prepare messages for API call
+        messages_for_api = [
+            {"role": "system", "content": system_message},
+            *conversation_history,
+            {"role": "user", "content": content}
+        ]
+
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages_for_api
         )
-        db.session.add(message)
+
+        # Save user message
+        user_message = Message(chat_id=chat_id, content=content, role='user')
+        db.session.add(user_message)
+
+        # Save assistant's response
+        assistant_content = response.choices[0].message.content
+        assistant_message = Message(chat_id=chat_id, content=assistant_content, role='assistant')
+        db.session.add(assistant_message)
+
         db.session.commit()
 
-        try:
-            messages = [
-                {"role": "system", "content": "You are SUPPLY DROP AI, an expert in emergency preparedness and disaster response."},
-                {"role": "user", "content": content}
-            ]
-            
-            response = client.chat.completions.create(
-                model="gpt-4",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=1000
-            )
-            
-            ai_content = response.choices[0].message.content if response.choices else "I apologize, but I couldn't generate a response."
-            
-            ai_message = Message(
-                chat_id=chat_id,
-                content=ai_content,
-                role='assistant'
-            )
-            db.session.add(ai_message)
-            db.session.commit()
-
-            return jsonify({
-                'content': ai_content,
-                'created_at': ai_message.created_at.isoformat()
-            })
-
-        except Exception as e:
-            logger.error(f"Error generating AI response: {str(e)}")
-            return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'user_message': {'content': content, 'timestamp': user_message.created_at.isoformat()},
+            'assistant_message': {'content': assistant_content, 'timestamp': assistant_message.created_at.isoformat()}
+        })
 
     except Exception as e:
-        logger.error(f"Error sending message: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error in send_message: {str(e)}")
+        return jsonify({'error': 'An error occurred while processing your message'}), 500
+
+@chat_bp.route('/new_chat', methods=['POST'])
+@login_required
+def new_chat():
+    try:
+        # Get the current chat's documents
+        current_chat_id = request.form.get('current_chat_id')
+        if current_chat_id:
+            current_chat = Chat.query.get_or_404(current_chat_id)
+            if current_chat.user_id != current_user.id:
+                abort(403)
+            documents = current_chat.documents
+        else:
+            documents = []
+
+        # Create a new chat
+        new_chat = Chat(user_id=current_user.id, title="New Chat")
+        
+        # Associate the same documents with the new chat
+        new_chat.documents = documents
+
+        db.session.add(new_chat)
+        db.session.commit()
+
+        # Redirect to the new chat
+        return redirect(url_for('chat.chat_view', chat_id=new_chat.id))
+    except Exception as e:
+        logger.error(f"Error creating new chat: {str(e)}")
+        flash('An error occurred while creating a new chat. Please try again.', 'error')
+        return redirect(url_for('chat.chat_page'))
+
+@chat_bp.route('/upload_document', methods=['POST'])
+@login_required
+def upload_document():
+    """Handle a general document upload."""
+    try:
+        # For example, get the file from the form, do some processing
+        file = request.files.get('file')
+        processing_type = request.form.get('processing_type', 'text')
+
+        if not file or file.filename == '':
+            flash('No file selected', 'error')
+            return redirect(url_for('chat.documents'))
+
+        document = Document(
+            user_id=current_user.id,
+            filename=file.filename,
+            content='',
+            processing_type=processing_type
+        )
+        db.session.add(document)
+        db.session.commit()
+
+        processed_result = process_document(file, processing_type)
+        document.content = processed_result.get('raw_text', '')
+        document.processed_content = processed_result
+        document.processing_status = 'completed'
+        db.session.commit()
+
+        flash('Document uploaded and processed successfully!', 'success')
+        return redirect(url_for('chat.documents'))
+    except Exception as e:
+        flash(str(e), 'error')
+        return redirect(url_for('chat.documents'))
+
+@chat_bp.route('/document/<int:document_id>')
+@login_required
+def view_document(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != current_user.id:
+        abort(403)  # Forbidden if the document doesn't belong to the current user
+    return render_template('documents/view.html', document=document)
