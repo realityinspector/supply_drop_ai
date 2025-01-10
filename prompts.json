@@ -1,0 +1,32 @@
+{
+    "document_summary": {
+        "role": "system",
+        "content": "Summarize the following document content concisely while maintaining key points.\nProvide the response in this JSON format:\n{\n    \"raw_text\": \"original text\",\n    \"summary\": \"concise summary\",\n    \"key_points\": [\"point 1\", \"point 2\", ...],\n    \"metadata\": {\n        \"word_count\": \"number of words in original\",\n        \"summary_length\": \"number of words in summary\",\n        \"compression_ratio\": \"percentage of reduction\"\n    }\n}"
+    },
+    "document_analysis": {
+        "role": "system",
+        "content": "Analyze the following document content and provide detailed insights.\nInclude sentiment, main themes, key findings, and readability metrics.\nRespond in this JSON format:\n{\n    \"raw_text\": \"original text\",\n    \"analysis\": {\n        \"sentiment\": {\n            \"overall\": \"positive/negative/neutral\",\n            \"confidence\": 0.0-1.0,\n            \"key_phrases\": [\"phrase 1\", \"phrase 2\"]\n        },\n        \"themes\": [\"theme1\", \"theme2\", ...],\n        \"findings\": [\"finding1\", \"finding2\", ...],\n        \"readability\": {\n            \"score\": \"0-100\",\n            \"grade_level\": \"reading grade level\",\n            \"suggestions\": [\"suggestion1\", \"suggestion2\"]\n        }\n    }\n}"
+    },
+    "insurance_requirements": {
+        "role": "system",
+        "content": "Extract and analyze insurance requirements from the document.\nFor each requirement, identify:\n- The specific requirement text\n- Category (e.g., liability, property, health, auto)\n- Priority level (high, medium, low)\n- Coverage amounts\n- Deadlines or time constraints\n- Special conditions\n\nRespond in this JSON format:\n{\n    \"raw_text\": \"original text\",\n    \"requirements\": [\n        {\n            \"requirement_text\": \"string\",\n            \"category\": \"string\",\n            \"priority\": \"string\",\n            \"coverage\": {\n                \"amount\": \"string\",\n                \"type\": \"string\"\n            },\n            \"deadline\": \"string or null\",\n            \"conditions\": [\"condition1\", \"condition2\"],\n            \"compliance_score\": 0-100\n        }\n    ],\n    \"summary\": {\n        \"total_requirements\": 0,\n        \"priority_breakdown\": {\n            \"high\": 0,\n            \"medium\": 0,\n            \"low\": 0\n        },\n        \"categories\": [\"category1\", \"category2\"]\n    }\n}"
+    },
+    "insurance_analysis": {
+        "explain": {
+            "role": "system",
+            "content": "You will receive two documents:\n1. REQUIREMENTS: A document outlining insurance requirements\n2. CLAIM: An insurance claim or policy document\n\nYour task: Extract and list EXACTLY 25 of the most important things to understand about this policy. These should be specific, actionable points directly from the document content, not general insurance advice.\n\nFocus on:\n- Exact coverage amounts and limits\n- Specific exclusions and conditions\n- Precise deadlines and time constraints\n- Actual obligations and requirements\n\nDO NOT provide general insurance advice or hypothetical scenarios. Every point must be derived directly from the provided documents."
+        },
+        "enhance": {
+            "role": "system",
+            "content": "You will receive two documents:\n1. REQUIREMENTS: A document outlining insurance requirements\n2. CLAIM: An insurance claim or policy document\n\nYour task: Generate EXACTLY 25 specific, concrete items that should be added to this insurance claim. These must be detailed additions that could be immediately implemented, not general suggestions.\n\nEach addition should:\n- Directly address a gap in the current claim\n- Include specific coverage amounts where applicable\n- Reference specific sections of the requirements document\n- Be immediately actionable\n\nFormat each addition as a concrete change, e.g.:\n'Add coverage for equipment breakdown with a limit of $50,000 to satisfy requirement 3.2'\n\nDO NOT provide general advice or vague suggestions. Every addition must be specific and immediately implementable."
+        },
+        "mock_rejection": {
+            "role": "system",
+            "content": "You will receive two documents:\n1. REQUIREMENTS: A document outlining insurance requirements\n2. CLAIM: An insurance claim or policy document\n\nYour task: Generate EXACTLY 25 specific reasons why this claim would be rejected, based solely on comparing the claim against the requirements. Each reason must:\n- Cite specific sections from both documents\n- Quote exact text showing the discrepancy\n- Provide the exact numerical or policy gap\n\nFormat each reason as:\n'REJECTION POINT X: [Specific issue] - Requirement states [quote] but claim shows [quote] resulting in [specific gap]'\n\nDO NOT include hypothetical scenarios or general insurance advice. Every rejection reason must be based on actual discrepancies between the documents."
+        },
+        "language": {
+            "role": "system",
+            "content": "You will receive two documents:\n1. REQUIREMENTS: A document outlining insurance requirements\n2. CLAIM: An insurance claim or policy document\n\nYour task: Perform a detailed language analysis of the claim document, focusing on:\n\nTACTICAL ISSUES:\n- Spelling errors (with correct spelling)\n- Grammar mistakes (with corrections)\n- Punctuation issues (with fixes)\n\nSTRATEGIC ISSUES:\n- Ambiguous language that could weaken the claim\n- Missing technical terms that should be included\n- Imprecise statements that need quantification\n\nFormat each issue as:\nORIGINAL: [exact text]\nISSUE: [specific problem]\nCORRECTION: [exact correction]\nIMPACT: [how this affects the claim]\n\nDO NOT provide general writing advice. Focus only on specific issues in the actual document that could affect the claim's success."
+        }
+    }
+} 

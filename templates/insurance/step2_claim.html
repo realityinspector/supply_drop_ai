@@ -2,9 +2,6 @@
 
 {% block insurance_content %}
 <div class="space-y-6">
-    <h3 class="text-lg font-semibold mb-3">Step 2: Upload Insurance Claim/Application</h3>
-    <p class="text-sm text-gray-600 mb-4">Upload your claim document or select a previously uploaded document for processing.</p>
-    
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -17,7 +14,7 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
-    
+
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden transition-opacity duration-300 ease-in-out z-50 flex items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-xl">
@@ -27,14 +24,21 @@
             </div>
         </div>
     </div>
+
+    <h3 class="text-lg font-semibold mb-3">Step 2: Upload Insurance Claim</h3>
+    <p class="text-sm text-gray-600 mb-4">Please upload your insurance claim document or select a previously uploaded document.</p>
     
     <!-- Previously Uploaded Documents -->
-    <div id="existingDocuments" class="mb-6 hidden">
+    {% if previous_documents %}
+    <div class="mb-6">
         <h4 class="text-md font-medium mb-2">Previously Uploaded Documents</h4>
         <div class="bg-gray-50 rounded-lg p-4">
             <select id="existingDocumentSelect" 
                     class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Select a previous document...</option>
+                {% for doc in previous_documents %}
+                    <option value="{{ doc.id }}">{{ doc.filename }} ({{ doc.uploaded_at.strftime('%m/%d/%Y') }})</option>
+                {% endfor %}
             </select>
             <button id="reuseDocumentBtn" 
                     class="mt-2 btn btn-secondary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200"
@@ -43,7 +47,8 @@
             </button>
         </div>
     </div>
-    
+    {% endif %}
+
     <!-- Upload New Document Form -->
     <form id="claimForm" class="space-y-4" action="{{ url_for('chat.upload_claim') }}" method="POST" enctype="multipart/form-data">
         <div>
@@ -56,21 +61,29 @@
                        accept=".pdf,.docx,.txt,.md,.json"
                        required>
             </div>
+            
+            <!-- Upload Progress -->
             <div id="uploadProgress" class="mt-4 hidden transform transition-all duration-300 ease-in-out">
                 <div class="relative pt-1">
                     <div class="flex mb-2 items-center justify-between">
                         <div>
-                            <span id="progressText" class="text-xs font-semibold inline-block text-blue-600">0%</span>
+                            <span id="progressText" class="text-xs font-semibold inline-block text-blue-600">
+                                0%
+                            </span>
                         </div>
                     </div>
                     <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
                         <div class="progress-bar-fill shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-300 ease-out" 
-                             style="width: 0%"></div>
+                             style="width: 0%">
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- Status Message -->
             <p id="claimStatus" class="mt-2 text-sm status-message transition-all duration-300"></p>
         </div>
+        
         <button type="submit" 
                 class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200 relative">
             <span class="relative inline-flex items-center">
@@ -83,147 +96,43 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch existing documents
-    fetch('/insurance/documents')
-        .then(response => response.json())
-        .then(data => {
-            const select = document.getElementById('existingDocumentSelect');
-            const existingDocs = document.getElementById('existingDocuments');
-            const reuseBtn = document.getElementById('reuseDocumentBtn');
-            
-            if (data.claim_documents && data.claim_documents.length > 0) {
-                existingDocs.classList.remove('hidden');
-                
-                data.claim_documents.forEach(doc => {
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.textContent = `${doc.filename} (${new Date(doc.uploaded_at).toLocaleDateString()})`;
-                    select.appendChild(option);
-                });
-
-                select.addEventListener('change', function() {
-                    reuseBtn.disabled = !this.value;
-                });
-
-                reuseBtn.addEventListener('click', function() {
-                    const docId = select.value;
-                    if (!docId) return;
-
-                    const formData = new FormData();
-                    formData.append('reuse_document_id', docId);
-
-                    // Show loading state
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    loadingOverlay.classList.remove('hidden');
-                    loadingOverlay.style.opacity = '1';
-
-                    fetch('/insurance/upload-claim', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => {
-                        if (response.redirected) {
-                            window.location.href = response.url;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        loadingOverlay.style.opacity = '0';
-                        setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
-                        alert('Failed to reuse document. Please try again.');
-                    });
-                });
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching documents:', error);
+    const select = document.getElementById('existingDocumentSelect');
+    const reuseBtn = document.getElementById('reuseDocumentBtn');
+    
+    if (select) {
+        select.addEventListener('change', function() {
+            reuseBtn.disabled = !this.value;
         });
 
-    // Handle file upload form
-    const form = document.getElementById('claimForm');
-    const fileInput = document.getElementById('claimDoc');
-    const uploadProgress = document.getElementById('uploadProgress');
-    const progressBar = uploadProgress.querySelector('.progress-bar-fill');
-    const progressText = document.getElementById('progressText');
-    const submitButton = form.querySelector('button[type="submit"]');
-    const spinner = submitButton.querySelector('.upload-spinner');
-    const statusElement = document.getElementById('claimStatus');
+        reuseBtn.addEventListener('click', function() {
+            const docId = select.value;
+            if (!docId) return;
 
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 16 * 1024 * 1024) { // 16MB limit
-                statusElement.textContent = '❌ File size exceeds 16MB limit';
-                statusElement.className = 'status-message mt-2 text-red-600';
-                fileInput.value = '';
-                submitButton.disabled = true;
-                return;
-            }
-            submitButton.disabled = false;
-            statusElement.textContent = '✅ File selected';
-            statusElement.className = 'status-message mt-2 text-green-600';
-        } else {
-            submitButton.disabled = true;
-            statusElement.textContent = '';
-        }
-    });
+            const formData = new FormData();
+            formData.append('reuse_document_id', docId);
 
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+            // Show loading state
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.remove('hidden');
+            loadingOverlay.style.opacity = '1';
 
-        const formData = new FormData(form);
-        
-        // Show loading states
-        submitButton.disabled = true;
-        spinner.classList.remove('hidden');
-        uploadProgress.classList.remove('hidden');
-        uploadProgress.style.transform = 'translateY(0)';
-        uploadProgress.style.opacity = '1';
-        statusElement.textContent = '📤 Uploading document...';
-        statusElement.className = 'status-message mt-2 text-blue-600';
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', form.action, true);
-
-        xhr.upload.onprogress = function(e) {
-            if (e.lengthComputable) {
-                const percent = (e.loaded / e.total) * 100;
-                progressBar.style.width = `${percent}%`;
-                progressText.textContent = `${Math.round(percent)}%`;
-            }
-        };
-
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200 || xhr.status === 302) {
-                    progressBar.style.width = '100%';
-                    progressText.textContent = '100%';
-                    statusElement.textContent = '✅ Upload successful! Redirecting...';
-                    statusElement.className = 'status-message mt-2 text-green-600';
-                    
-                    // Follow redirect
-                    if (xhr.responseURL) {
-                        window.location.href = xhr.responseURL;
-                    }
-                } else {
-                    // Handle error
-                    spinner.classList.add('hidden');
-                    uploadProgress.style.opacity = '0';
-                    uploadProgress.style.transform = 'translateY(-10px)';
-                    setTimeout(() => {
-                        uploadProgress.classList.add('hidden');
-                        progressBar.style.width = '0%';
-                    }, 300);
-                    
-                    submitButton.disabled = false;
-                    statusElement.textContent = '❌ Upload failed. Please try again.';
-                    statusElement.className = 'status-message mt-2 text-red-600';
+            fetch('/insurance/upload-claim', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
                 }
-            }
-        };
-
-        xhr.send(formData);
-    });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
+                alert('Failed to reuse document. Please try again.');
+            });
+        });
+    }
 
     // Auto-hide flash messages
     const flashMessages = document.querySelectorAll('.flash-message');

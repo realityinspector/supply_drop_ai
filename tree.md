@@ -22,6 +22,7 @@
 ├── package-lock.json
 ├── package.json
 ├── profile.py
+├── prompts.json
 ├── static/
 │   └── [1 image files]
 │   ├── css/
@@ -37,7 +38,6 @@
 │   ├── video/
 ├── templates/
 │   ├── _footer.html
-│   ├── _header.html
 │   ├── _nav.html
 │   ├── base.html
 │   ├── chat/
@@ -65,6 +65,7 @@
 │   │   ├── view.html
 │   ├── signup.html
 │   ├── video_player.html
+├── tree.md
 ├── treehouse.py
 ├── uploads/
 ```

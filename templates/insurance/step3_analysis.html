@@ -6,20 +6,20 @@
     <p class="text-sm text-gray-600 mb-4">Select an analysis type to process your documents.</p>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Critique Analysis -->
+        <!-- Explain Analysis -->
         <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
-            <button onclick="analyzeDocuments('critique')" 
+            <button onclick="analyzeDocuments('explain')" 
                     class="w-full text-left space-y-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <h4 class="font-semibold">Critique Analysis</h4>
+                        <h4 class="font-semibold">Policy Explanation</h4>
                     </div>
                 </div>
                 <p class="text-sm text-gray-600">
-                    Critically evaluate the claim against requirements. Identify gaps, inconsistencies, and concerns.
+                    Comprehensive breakdown of the 25 most important things to understand about your policy.
                 </p>
             </button>
         </div>
@@ -33,47 +33,47 @@
                         <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
-                        <h4 class="font-semibold">Enhancement Analysis</h4>
+                        <h4 class="font-semibold">Coverage Enhancement</h4>
                     </div>
                 </div>
                 <p class="text-sm text-gray-600">
-                    Suggest improvements and enhancements based on industry best practices.
+                    Identifies 25 additional coverage opportunities and items to include in your application.
                 </p>
             </button>
         </div>
 
-        <!-- Formalization Analysis -->
+        <!-- Mock Rejection Analysis -->
         <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
-            <button onclick="analyzeDocuments('formalize')" 
+            <button onclick="analyzeDocuments('mock_rejection')" 
                     class="w-full text-left space-y-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        <svg class="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
-                        <h4 class="font-semibold">Formalization</h4>
+                        <h4 class="font-semibold">Mock Rejection Analysis</h4>
                     </div>
                 </div>
                 <p class="text-sm text-gray-600">
-                    Rewrite in formal, professional insurance language while maintaining clarity.
+                    Simulates a rejection scenario with 25 potential reasons why the application might be denied.
                 </p>
             </button>
         </div>
 
-        <!-- Grammar Analysis -->
+        <!-- Language Analysis -->
         <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200 hover:shadow-md transition-shadow duration-200">
-            <button onclick="analyzeDocuments('grammar')" 
+            <button onclick="analyzeDocuments('language')" 
                     class="w-full text-left space-y-2">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
-                        <h4 class="font-semibold">Grammar Check</h4>
+                        <h4 class="font-semibold">Language & Strategic Review</h4>
                     </div>
                 </div>
                 <p class="text-sm text-gray-600">
-                    Comprehensive grammar and spelling analysis with professional corrections.
+                    Detailed analysis of spelling, grammar, tone, and strategic considerations with specific corrections.
                 </p>
             </button>
         </div>
@@ -100,27 +100,46 @@ async function analyzeDocuments(analysisType) {
         statusDiv.classList.remove('hidden');
         errorDiv.classList.add('hidden');
         
-        const response = await fetch('/insurance-analysis', {
+        const formData = new FormData();
+        formData.append('analysis_type', analysisType);
+        
+        const response = await fetch('{{ url_for("chat.analyze_documents") }}', {
             method: 'POST',
+            body: formData,
             headers: {
-                'Content-Type': 'application/json'
+                'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                claim_document_id: '{{ session.get("claim_doc_id") }}',
-                requirement_document_id: '{{ session.get("requirements_doc_id") }}',
-                analysis_type: analysisType
-            })
+            redirect: 'follow'
         });
 
-        const data = await response.json();
-        
-        if (response.ok) {
-            // Redirect to chat view with the analysis results
-            window.location.href = `/chat?chat_id=${data.chat_id}`;
-        } else {
+        // Check if we got redirected
+        if (response.redirected) {
+            window.location.href = response.url;
+            return;
+        }
+
+        // Try to parse response as JSON
+        let data;
+        const text = await response.text();
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('Failed to parse response:', text);
+            throw new Error('Server returned an invalid response. Please try again.');
+        }
+
+        if (!response.ok) {
             throw new Error(data.error || 'Analysis failed');
         }
+
+        if (data.chat_id) {
+            window.location.href = '{{ url_for("chat.chat_page") }}?chat_id=' + data.chat_id;
+        } else {
+            throw new Error('No chat ID returned from server');
+        }
+        
     } catch (error) {
+        console.error('Analysis error:', error);
         errorDiv.textContent = error.message;
         errorDiv.classList.remove('hidden');
     } finally {

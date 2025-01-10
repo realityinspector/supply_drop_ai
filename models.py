@@ -83,6 +83,7 @@ class Chat(db.Model):
     title = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship('Message', back_populates='chat', lazy=True)
+    documents = db.relationship('Document', secondary='chat_documents', backref='chats')
 
     def __init__(self, user_id, title=None):
         self.user_id = user_id
@@ -152,3 +153,8 @@ class InsuranceClaim(db.Model):
         self.analysis_type = analysis_type
         self.analysis_result = analysis_result
         self.status = 'pending'
+
+chat_documents = db.Table('chat_documents',
+    db.Column('chat_id', db.Integer, db.ForeignKey('chat.id'), primary_key=True),
+    db.Column('document_id', db.Integer, db.ForeignKey('document.id'), primary_key=True)
+)

@@ -2,18 +2,46 @@
 
 {% block insurance_content %}
 <div class="space-y-6">
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="flash-message p-4 mb-4 rounded-lg transition-opacity duration-300 ease-in-out
-                    {% if category == 'error' %}bg-red-100 text-red-700 border border-red-400
-                    {% else %}bg-green-100 text-green-700 border border-green-400{% endif %}">
-                    {{ message }}
+    <h3 class="text-xl font-semibold">Step 1: Upload Insurance Requirements and Policy</h3>
+    
+    <p class="text-gray-600">Please upload your insurance requirements document or select a previously uploaded document.</p>
+    
+    {% if previous_documents %}
+    <div>
+        <h4 class="font-medium mb-2">Previously Uploaded Documents</h4>
+        <div class="flex flex-col space-y-2">
+            <select id="existingDocumentSelect" class="w-full p-2 border rounded">
+                <option value="">Select a document</option>
+                {% for doc in previous_documents %}
+                    <option value="{{ doc.id }}" {% if doc.id == current_doc_id %}selected{% endif %}>
+                        {{ doc.filename }} ({{ doc.uploaded_at.strftime('%m/%d/%Y') }})
+                    </option>
+                {% endfor %}
+            </select>
+            <button id="reuseDocumentBtn" 
+                    type="button"
+                    class="bg-indigo-400 text-white px-4 py-2 rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                Use Selected Document
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-8">
+        <h4 class="font-medium mb-2">Upload New Document</h4>
+        <div class="border rounded p-4">
+            <form id="requirementsForm" action="{{ url_for('chat.upload_requirements') }}" method="post" enctype="multipart/form-data">
+                <div>
+                    <input type="file" name="file" id="file" accept=".pdf,.docx,.txt,.md,.json"
+                           class="mb-4">
+                    <button type="submit" 
+                            class="bg-indigo-400 text-white px-4 py-2 rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Upload Document
+                    </button>
                 </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+            </form>
+        </div>
+    </div>
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden transition-opacity duration-300 ease-in-out z-50 flex items-center justify-center">
@@ -25,137 +53,60 @@
         </div>
     </div>
 
-    <h3 class="text-lg font-semibold mb-3">Step 1: Upload Insurance Requirements and Policy</h3>
-    <p class="text-sm text-gray-600 mb-4">Please upload your insurance requirements document or select a previously uploaded document.</p>
-    
-    <!-- Previously Uploaded Documents -->
-    <div id="existingDocuments" class="mb-6 hidden">
-        <h4 class="text-md font-medium mb-2">Previously Uploaded Documents</h4>
-        <div class="bg-gray-50 rounded-lg p-4">
-            <select id="existingDocumentSelect" 
-                    class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select a previous document...</option>
-            </select>
-            <button id="reuseDocumentBtn" 
-                    class="mt-2 btn btn-secondary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200"
-                    disabled>
-                Use Selected Document
-            </button>
-        </div>
-    </div>
-
-    <!-- Upload New Document Form -->
-    <form id="requirementsForm" class="space-y-4" action="{{ url_for('chat.upload_requirements') }}" method="POST" enctype="multipart/form-data">
-        <div>
-            <label class="block text-gray-700 font-medium mb-2">Upload New Requirements Document</label>
-            <div class="relative">
-                <input type="file" 
-                       class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" 
-                       id="requirementsDoc" 
-                       name="file"
-                       accept=".pdf,.docx,.txt,.md,.json"
-                       required>
-            </div>
-            
-            <!-- Upload Progress -->
-            <div id="uploadProgress" class="mt-4 hidden transform transition-all duration-300 ease-in-out">
-                <div class="relative pt-1">
-                    <div class="flex mb-2 items-center justify-between">
-                        <div>
-                            <span id="progressText" class="text-xs font-semibold inline-block text-blue-600">
-                                0%
-                            </span>
-                        </div>
-                    </div>
-                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
-                        <div class="progress-bar-fill shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-600 transition-all duration-300 ease-out" 
-                             style="width: 0%">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Status Message -->
-            <p id="requirementsStatus" class="mt-2 text-sm status-message transition-all duration-300"></p>
-        </div>
-        
-        <button type="submit" 
-                class="btn btn-primary w-full sm:w-auto transform hover:scale-105 active:scale-95 transition-all duration-200 relative">
-            <span class="relative inline-flex items-center">
-                Upload Requirements
-                <span class="upload-spinner absolute right-0 -mr-1 h-4 w-4 animate-ping rounded-full bg-white opacity-75 hidden"></span>
-            </span>
-        </button>
-    </form>
+    <div id="requirementsStatus" class="status-message"></div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch existing documents
-    fetch('/insurance/documents')
+    const existingDocSelect = document.getElementById('existingDocumentSelect');
+    const reuseDocBtn = document.getElementById('reuseDocumentBtn');
+    const requirementsForm = document.getElementById('requirementsForm');
+    
+    if (existingDocSelect && reuseDocBtn) {
+        // Initial state
+        reuseDocBtn.disabled = !existingDocSelect.value;
+        
+        // Update button state when selection changes
+        existingDocSelect.addEventListener('change', function() {
+            reuseDocBtn.disabled = !this.value;
+        });
+
+        // Add click event handler for the button
+        reuseDocBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (existingDocSelect.value) {
+                const formData = new FormData();
+                formData.append('reuse_document_id', existingDocSelect.value);
+                submitForm(formData);
+            }
+        });
+    }
+
+    // Handle form submission for new file upload
+    requirementsForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        submitForm(new FormData(this));
+    });
+
+    function submitForm(formData) {
+        fetch('{{ url_for("chat.upload_requirements") }}', {
+            method: 'POST',
+            body: formData
+        })
         .then(response => response.json())
         .then(data => {
-            const select = document.getElementById('existingDocumentSelect');
-            const existingDocs = document.getElementById('existingDocuments');
-            const reuseBtn = document.getElementById('reuseDocumentBtn');
-            
-            if (data.requirements_documents && data.requirements_documents.length > 0) {
-                existingDocs.classList.remove('hidden');
-                
-                data.requirements_documents.forEach(doc => {
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.textContent = `${doc.filename} (${new Date(doc.uploaded_at).toLocaleDateString()})`;
-                    select.appendChild(option);
-                });
-
-                select.addEventListener('change', function() {
-                    reuseBtn.disabled = !this.value;
-                });
-
-                reuseBtn.addEventListener('click', function() {
-                    const docId = select.value;
-                    if (!docId) return;
-
-                    const formData = new FormData();
-                    formData.append('reuse_document_id', docId);
-
-                    // Show loading state
-                    const loadingOverlay = document.getElementById('loadingOverlay');
-                    loadingOverlay.classList.remove('hidden');
-                    loadingOverlay.style.opacity = '1';
-
-                    fetch('/insurance/upload-requirements', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => {
-                        if (response.redirected) {
-                            window.location.href = response.url;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        loadingOverlay.style.opacity = '0';
-                        setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
-                        alert('Failed to reuse document. Please try again.');
-                    });
-                });
+            if (data.success) {
+                // Update UI or redirect as needed
+                window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
+            } else {
+                alert(data.error || 'An error occurred while processing your request.');
             }
         })
         .catch(error => {
-            console.error('Error fetching documents:', error);
+            console.error('Error:', error);
+            alert('An error occurred while processing your request.');
         });
-
-    // Auto-hide flash messages
-    const flashMessages = document.querySelectorAll('.flash-message');
-    flashMessages.forEach(msg => {
-        setTimeout(() => {
-            msg.style.opacity = '0';
-            setTimeout(() => msg.remove(), 300);
-        }, 5000);
-    });
+    }
 });
 </script>
-
 {% endblock %}
