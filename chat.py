@@ -75,6 +75,16 @@ def insurance_wizard():
     # Get user's workflow state from session
     workflow_state = session.get('workflow_state', {})
     
+    # If returning to step 3 and no workflow state, try to get the most recent claim
+    if step == 3 and not workflow_state:
+        recent_claim = InsuranceClaim.query.filter_by(user_id=current_user.id).order_by(InsuranceClaim.id.desc()).first()
+        if recent_claim:
+            workflow_state = {
+                'requirements_doc_id': recent_claim.requirement_id,
+                'claim_doc_id': recent_claim.document_id
+            }
+            session['workflow_state'] = workflow_state
+    
     if step > 1 and not workflow_state.get('requirements_doc_id'):
         flash('Please complete document uploads first', 'error')
         return redirect(url_for('chat.insurance_wizard', step=1))
@@ -266,17 +276,30 @@ def analyze_documents():
         if not analysis_type:
             return jsonify({'error': 'Analysis type is required'}), 400
 
+        # Get previous chat ID if this is a follow-up analysis
+        previous_chat_id = request.form.get('previous_chat_id')
+        previous_messages = []
+        if previous_chat_id:
+            previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
+            previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
+
         chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {analysis_type}")
         db.session.add(chat)
 
         claim_doc = Document.query.get_or_404(workflow_state['claim_doc_id'])
         req_doc = Document.query.get_or_404(workflow_state['requirements_doc_id'])
 
-        analysis_result = analyze_insurance_claim(
-            claim_doc.content,
-            req_doc.content,
-            analysis_type
-        )
+        try:
+            analysis_result = analyze_insurance_claim(
+                claim_doc.content,
+                req_doc.content,
+                analysis_type,
+                previous_messages if previous_messages else None
+            )
+        except ValueError as ve:
+            return jsonify({'error': f'Analysis failed: {str(ve)}'}), 400
+        except Exception as e:
+            return jsonify({'error': f'Unexpected error during analysis: {str(e)}'}), 500
 
         claim = InsuranceClaim(
             user_id=current_user.id,
@@ -327,7 +350,15 @@ def chat_view(chat_id):
     chat = Chat.query.filter_by(id=chat_id, user_id=current_user.id).first_or_404()
     messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
     documents = chat.documents if chat.documents else []
-    return render_template('chat/detail.html', chat=chat, messages=messages, documents=documents)
+
+    # Get the insurance claim associated with this chat
+    insurance_claim = InsuranceClaim.query.filter_by(user_id=current_user.id).order_by(InsuranceClaim.id.desc()).first()
+
+    return render_template('chat/detail.html', 
+                           chat=chat, 
+                           messages=messages, 
+                           documents=documents,
+                           insurance_claim=insurance_claim)
 
 @chat_bp.route('/chat/<int:chat_id>/messages', methods=['POST'])
 @login_required
@@ -360,7 +391,15 @@ def send_message(chat_id):
             return jsonify({'error': error_message, 'warning': True}), 413
 
         # Prepare system message with document context
-        system_message = f"You are an AI assistant. Here's the context from the user's documents:\n\n"
+        system_message = """You are an AI assistant specialized in analyzing insurance documents and claims. Your role is to:
+1. Help users understand their insurance documents
+2. Compare claims against policy requirements
+3. Identify potential issues or gaps in coverage
+4. Provide actionable recommendations
+5. Explain complex insurance terms in simple language
+
+Here's the context from the user's documents:
+"""
         for doc in document_context:
             system_message += f"Document: {doc['filename']}\nContent: {doc['content'][:500]}...\n\n"
 

@@ -151,36 +151,70 @@ def process_insurance_requirements(content: str) -> Dict[str, Any]:
     except Exception as e:
         raise Exception(f"Failed to process insurance requirements: {str(e)}")
 
-def analyze_insurance_claim(claim_content: str, requirement_content: str, analysis_type: str) -> Dict[str, Any]:
+def analyze_insurance_claim(claim_content: str, requirement_content: str, analysis_type: str, previous_messages: List[Dict[str, str]] = None) -> Dict[str, Any]:
     """Analyze insurance claim against requirements with specified analysis type."""
     try:
         if analysis_type not in PROMPTS["insurance_analysis"]:
             raise ValueError(f"Invalid analysis type: {analysis_type}")
 
+        # Build context from previous messages if they exist
+        context_prompt = ""
+        if previous_messages:
+            context_prompt = "\nPrevious analyses have already covered these points:\n"
+            for msg in previous_messages:
+                if msg["role"] == "assistant" and msg.get("content"):
+                    try:
+                        content = json.loads(msg["content"])
+                        if "analysis" in content and "improvements" in content["analysis"]:
+                            for priority, items in content["analysis"]["improvements"].items():
+                                context_prompt += f"\n{priority}:\n"
+                                context_prompt += "\n".join(items) + "\n"
+                    except json.JSONDecodeError:
+                        continue
+            context_prompt += "\nProvide 25 NEW and UNIQUE points that haven't been covered above.\n"
+
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionSystemMessageParam(
                 role=PROMPTS["insurance_analysis"][analysis_type]["role"],
                 content=f"""{PROMPTS["insurance_analysis"][analysis_type]["content"]}
-                Provide response in this JSON format:
-                {{
-                    "analysis": {{
-                        "summary": "detailed analysis text",
-                        "score": 0-100,
-                        "key_points": ["point1", "point2", ...],
-                        "strategic_considerations": ["consideration1", "consideration2", ...],
-                        "improvements": {{
-                            "high_priority": ["improvement1", "improvement2"],
-                            "medium_priority": ["improvement1", "improvement2"],
-                            "low_priority": ["improvement1", "improvement2"]
-                        }}
-                    }},
-                    "details": {{
-                        "matching_requirements": ["req1", "req2"],
-                        "missing_requirements": ["req1", "req2"],
-                        "compliance_score": 0-100,
-                        "risk_assessment": "string"
-                    }}
-                }}"""
+{context_prompt}
+Provide your response as exactly 25 NEW items, organized into priority sections but maintaining a sequential numbering from 1-25. Format as follows:
+
+{{
+    "analysis": {{
+        "summary": "detailed analysis text",
+        "score": 0-100,
+        "improvements": {{
+            "high_priority": [
+                "1. First high priority item",
+                "2. Second high priority item",
+                "3. Third high priority item"
+            ],
+            "medium_priority": [
+                "8. First medium priority item",
+                "9. Second medium priority item"
+            ],
+            "low_priority": [
+                "15. First low priority item",
+                "16. Second low priority item"
+            ]
+        }}
+    }},
+    "details": {{
+        "matching_requirements": ["req1", "req2"],
+        "missing_requirements": ["req1", "req2"],
+        "compliance_score": 0-100,
+        "is_followup_analysis": true
+    }}
+}}
+
+IMPORTANT: 
+- Maintain sequential numbering from 1 to 25 across all sections
+- Each item should start with its number (1-25) followed by a period
+- The total number of items across all priority sections must equal exactly 25
+- All items must be NEW and not mentioned in any previous analyses
+- Focus on different aspects or deeper details than previous analyses
+- Ensure your response is a valid JSON object"""
             ),
             ChatCompletionUserMessageParam(
                 role="user",
@@ -189,13 +223,15 @@ def analyze_insurance_claim(claim_content: str, requirement_content: str, analys
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            response_format={"type": "json_object"}
+            model="gpt-4",
+            messages=messages
         )
         
         if response.choices and response.choices[0].message and response.choices[0].message.content:
-            return json.loads(response.choices[0].message.content)
+            try:
+                return json.loads(response.choices[0].message.content)
+            except json.JSONDecodeError as json_error:
+                raise ValueError(f"Failed to parse JSON response: {str(json_error)}")
         raise Exception("Empty response from OpenAI")
     except Exception as e:
         raise Exception(f"Failed to analyze insurance claim: {str(e)}")

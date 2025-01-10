@@ -9,6 +9,13 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">{{ chat.title }}</h1>
+                {% if insurance_claim %}
+                <div class="mt-4">
+                    <button id="newAnalysisBtn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Run New Analysis
+                    </button>
+                </div>
+                {% endif %}
                 {% if documents %}
                 <div class="mt-2 text-sm text-gray-600">
                     Analyzed files:
@@ -339,6 +346,11 @@ document.addEventListener('DOMContentLoaded', function() {
             sendMessage(this.value);
         }
     });
+});
+
+// New Analysis Button Handler
+document.getElementById('newAnalysisBtn').addEventListener('click', function() {
+    window.location.href = "{{ url_for('chat.insurance_wizard', step=3) }}";
 });
 </script>
 {% endblock %} 
