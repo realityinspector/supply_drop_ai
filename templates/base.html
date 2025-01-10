@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUPPLY DROP AI - Disaster Preparedness Assistant</title>
+    <title>Supply Drop AI - {% block title %}{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dist.css') }}">
+    {% block extra_css %}{% endblock %}
 </head>
 <body class="h-full flex flex-col bg-gray-100">
-    {% include '_header.html' %}
+    <nav class="bg-gray-800">
+        {% include '_nav.html' %}
+    </nav>
 
     <div class="bg-yellow-50 border-b border-yellow-200">
         <div class="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">
@@ -26,13 +29,29 @@
         </div>
     </div>
 
-    <main class="flex-grow">
+    <div class="flex-grow">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} rounded-md p-4 mb-4 {% if category == 'error' %}bg-red-50 text-red-700{% elif category == 'success' %}bg-green-50 text-green-700{% else %}bg-blue-50 text-blue-700{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
-    </main>
+    </div>
 
-    {% include '_footer.html' %}
+    <footer class="bg-gray-800 text-white py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm">&copy; 2024 Supply Drop AI. All rights reserved.</p>
+        </div>
+    </footer>
 
-    <script src="{{ url_for('static', filename='js/navigation.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -92,13 +92,13 @@ class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.Integer, db.ForeignKey('chat.id'), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    role = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
-    def __init__(self, chat_id, content, role):
-        self.chat_id = chat_id
-        self.content = content
-        self.role = role
+    chat = db.relationship('Chat', back_populates='messages')
+
+    def __repr__(self):
+        return f'<Message {self.id}>'
 
 class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)

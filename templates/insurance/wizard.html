@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Insurance Document Processing{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Insurance Document Processing</h1>
+        
+        <div class="mb-8">
+            <div class="flex items-center">
+                {% for step in ['Upload Requirements', 'Upload Claim', 'Analysis'] %}
+                    <div class="flex items-center">
+                        <div class="rounded-full h-8 w-8 flex items-center justify-center {% if loop.index == current_step %}bg-blue-500 text-white{% elif loop.index < current_step %}bg-green-500 text-white{% else %}bg-gray-300 text-gray-600{% endif %}">
+                            {% if loop.index < current_step %}
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            {% else %}
+                                {{ loop.index }}
+                            {% endif %}
+                        </div>
+                        <div class="ml-4 text-sm font-medium {% if loop.index <= current_step %}text-gray-900{% else %}text-gray-500{% endif %}">{{ step }}</div>
+                    </div>
+                    {% if not loop.last %}
+                        <div class="flex-1 border-t border-gray-300 mx-4"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                {% if current_step == 1 %}
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Step 1: Upload Insurance Requirements</h2>
+                    <form action="{{ url_for('chat.upload_requirements') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="reuse_document" class="block text-sm font-medium text-gray-700">Select a previously uploaded document:</label>
+                            <select name="reuse_document_id" id="reuse_document" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                <option value="">-- Select a document --</option>
+                                {% for doc in previous_documents %}
+                                    <option value="{{ doc.id }}">{{ doc.filename }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="file" class="block text-sm font-medium text-gray-700">Or upload a new document:</label>
+                            <input type="file" name="file" id="file" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Upload Requirements
+                        </button>
+                    </form>
+                {% elif current_step == 2 %}
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Step 2: Upload Insurance Claim</h2>
+                    <form action="{{ url_for('chat.upload_claim') }}" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="reuse_document" class="block text-sm font-medium text-gray-700">Select a previously uploaded document:</label>
+                            <select name="reuse_document_id" id="reuse_document" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                <option value="">-- Select a document --</option>
+                                {% for doc in previous_documents %}
+                                    <option value="{{ doc.id }}">{{ doc.filename }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="file" class="block text-sm font-medium text-gray-700">Or upload a new document:</label>
+                            <input type="file" name="file" id="file" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
+                        </div>
+                        <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Upload Claim
+                        </button>
+                    </form>
+                {% elif current_step == 3 %}
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Step 3: Analysis Options</h2>
+                    <form action="{{ url_for('chat.analyze_documents') }}" method="post">
+                        <div class="space-y-4">
+                            {% for analysis_type in ['critique', 'enhance', 'formalize', 'grammar'] %}
+                                <div class="flex items-center">
+                                    <input id="{{ analysis_type }}" name="analysis_type" type="radio" value="{{ analysis_type }}" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                    <label for="{{ analysis_type }}" class="ml-3 block text-sm font-medium text-gray-700">
+                                        {{ analysis_type|capitalize }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Start Analysis
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

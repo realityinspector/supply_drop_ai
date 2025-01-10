@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - {{ chat.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 py-6 sm:px-0">
+        <div class="flex flex-col h-[calc(100vh-16rem)]">
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+                <div class="px-4 py-5 sm:px-6">
+                    <h2 class="text-lg font-medium text-gray-900">{{ chat.title }}</h2>
+                </div>
+            </div>
+
+            <div class="flex-grow bg-white shadow overflow-hidden sm:rounded-lg mb-4">
+                <div class="px-4 py-5 sm:px-6 h-full overflow-y-auto" id="messages-container">
+                    {% for message in messages %}
+                        <div class="mb-4 {% if message.role == 'assistant' %}bg-gray-50 rounded-lg p-4{% endif %}">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    {% if message.role == 'assistant' %}
+                                        <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                            <span class="text-white text-sm">AI</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center">
+                                            <span class="text-white text-sm">{{ current_user.username[0]|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <p class="text-sm text-gray-900 whitespace-pre-wrap">{{ message.content }}</p>
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        {{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-white shadow sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <form id="message-form" class="flex space-x-4">
+                        <div class="flex-grow">
+                            <label for="message" class="sr-only">Message</label>
+                            <textarea
+                                id="message"
+                                name="message"
+                                rows="3"
+                                class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                placeholder="Type your message..."
+                            ></textarea>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button
+                                type="submit"
+                                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('message-form');
+    const messagesContainer = document.getElementById('messages-container');
+    const textarea = document.getElementById('message');
+
+    function scrollToBottom() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    scrollToBottom();
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        try {
+            const response = await fetch(`{{ url_for('chat.send_message', chat_id=chat.id) }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to send message');
+            }
+
+            const message = await response.json();
+            
+            const messageHtml = `
+                <div class="mb-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center">
+                                <span class="text-white text-sm">{{ current_user.username[0]|upper }}</span>
+                            </div>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p class="text-sm text-gray-900 whitespace-pre-wrap">${message.content}</p>
+                            <div class="mt-2 text-xs text-gray-500">
+                                ${new Date(message.created_at).toLocaleString()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.insertAdjacentHTML('beforeend', messageHtml);
+            textarea.value = '';
+            scrollToBottom();
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to send message. Please try again.');
+        }
+    });
+});
+</script>
+{% endblock %} 

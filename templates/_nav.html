@@ -1,92 +1,150 @@
-<div class="flex justify-between items-center h-16">
-    <a href="{{ url_for('chat.index') }}" class="flex items-center space-x-4">
-        <img src="{{ url_for('static', filename='logo.png') }}" 
-             alt="SUPPLY DROP AI Logo" 
-             class="h-10"
-             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-        <span class="text-xl font-semibold hidden">SUPPLY DROP AI</span>
-    </a>
-    
-    <div class="hidden md:flex items-center space-x-4">
-        {% set nav_links = [
-            ('chat.chat_page', 'Chat'),
-            ('chat.documents', 'Documents'),
-            ('chat.checklists', 'Checklists'),
-            ('profile.view_profile', 'Profile'),
-            ('profile.list_reports', 'Reports')
-        ] %}
-        
-        {% for endpoint, label in nav_links %}
-            <a href="{{ url_for(endpoint) }}" 
-               class="text-sm hover:text-gray-400 transition-colors duration-200 {% if request.endpoint == endpoint %}text-white font-medium{% else %}text-gray-300{% endif %}"
-               {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
-               >{{ label }}</a>
-        {% endfor %}
-    
-        {% if current_user.is_authenticated %}
-            <div class="flex items-center space-x-4">
-                <span class="text-sm text-gray-300">{{ current_user.username }}</span>
-                <span class="text-sm text-green-400">Credits: {{ current_user.credits }}</span>
-                <a href="{{ url_for('auth.logout') }}" 
-                   class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors">
-                    Logout
+{% if current_user.is_authenticated %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <a href="{{ url_for('chat.index') }}" class="flex items-center">
+                        <span class="text-white font-bold text-xl">Supply Drop AI</span>
+                    </a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="{{ url_for('chat.documents') }}" 
+                           class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                            Documents
+                        </a>
+                        <a href="{{ url_for('chat.chat_page') }}" 
+                           class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                            Past Chats
+                        </a>
+                        <a href="{{ url_for('chat.insurance_wizard') }}" 
+                           class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                            Insurance Wizard
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="hidden md:block">
+                <div class="ml-4 flex items-center md:ml-6">
+                    <a href="{{ url_for('profile.view_profile') }}" 
+                       class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} px-3 py-2 rounded-md text-sm font-medium">
+                        {{ current_user.username }}
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" 
+                       class="text-gray-300 hover:bg-red-600 hover:text-white px-3 py-2 rounded-md text-sm font-medium ml-2">
+                        Logout
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="md:hidden">
+                <button type="button" 
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                        aria-controls="mobile-menu"
+                        aria-expanded="false"
+                        onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                    <span class="sr-only">Open main menu</span>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="hidden md:hidden" id="mobile-menu">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <a href="{{ url_for('chat.documents') }}" 
+               class="{% if request.endpoint == 'chat.documents' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+                Documents
+            </a>
+            <a href="{{ url_for('chat.chat_page') }}" 
+               class="{% if request.endpoint == 'chat.chat_page' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+                Past Chats
+            </a>
+            <a href="{{ url_for('chat.insurance_wizard') }}" 
+               class="{% if request.endpoint == 'chat.insurance_wizard' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+                Insurance Wizard
+            </a>
+            <a href="{{ url_for('profile.view_profile') }}" 
+               class="{% if request.endpoint == 'profile.view_profile' %}bg-gray-900 text-white{% else %}text-gray-300 hover:bg-gray-700 hover:text-white{% endif %} block px-3 py-2 rounded-md text-base font-medium">
+                {{ current_user.username }}
+            </a>
+            <a href="{{ url_for('auth.logout') }}" 
+               class="text-gray-300 hover:bg-red-600 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                Logout
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <div class="flex-shrink-0">
+                <a href="{{ url_for('main.index') }}" class="flex items-center">
+                    <span class="text-white font-bold text-xl">Supply Drop AI</span>
                 </a>
             </div>
-        {% else %}
-            <a href="{{ url_for('auth.login') }}" 
-               class="text-sm text-gray-300 hover:text-white transition-colors">Login</a>
-            <a href="{{ url_for('auth.signup') }}" 
-               class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
-                Sign Up
-            </a>
-        {% endif %}
-    </div>
-
-    <!-- Mobile menu button -->
-    <button id="mobile-menu-button" 
-            type="button" 
-            class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-            aria-controls="mobile-menu"
-            aria-expanded="false">
-        <span class="sr-only">Open main menu</span>
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-    </button>
-</div>
-
-<!-- Mobile menu -->
-<div id="mobile-menu" 
-     class="fixed inset-y-0 right-0 w-64 bg-gray-800 md:hidden transform translate-x-full transition-transform duration-300 ease-in-out z-50 shadow-lg">
-    <div class="px-4 pt-6 pb-3">
-        <div class="flex items-center mb-6">
-            <img src="{{ url_for('static', filename='logo.png') }}" 
-                 alt="SUPPLY DROP AI Logo" 
-                 class="h-8"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <span class="text-lg font-semibold text-white hidden">SUPPLY DROP AI</span>
-        </div>
-        <div class="space-y-1">
-            {% for endpoint, label in nav_links %}
-                <a href="{{ url_for(endpoint) }}" 
-                   class="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors {% if request.endpoint == endpoint %}bg-gray-700 text-white{% endif %}"
-                   {% if request.endpoint == endpoint %}aria-current="page"{% endif %}
-                   >{{ label }}</a>
-            {% endfor %}
-            
-            {% if current_user.is_authenticated %}
-                <div class="px-3 py-2">
-                    <span class="block text-gray-300">{{ current_user.username }}</span>
-                    <span class="block text-green-400">Credits: {{ current_user.credits }}</span>
+            <div class="hidden md:block">
+                <div class="ml-4 flex items-center md:ml-6 space-x-4">
+                    <a href="{{ url_for('auth.login') }}" 
+                       class="text-gray-300 hover:bg-gray-700 hover:text-white px-4 py-2 rounded-md text-sm font-medium">
+                        Login
+                    </a>
+                    <a href="{{ url_for('auth.register') }}" 
+                       class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium">
+                        Register
+                    </a>
                 </div>
-                <a href="{{ url_for('auth.logout') }}" 
-                   class="block px-3 py-2 rounded-md text-white bg-red-500 hover:bg-red-600 transition-colors">Logout</a>
-            {% else %}
-                <a href="{{ url_for('auth.login') }}" 
-                   class="block px-3 py-2 rounded-md text-gray-300 hover:text-white hover:bg-gray-700 transition-colors">Login</a>
-                <a href="{{ url_for('auth.signup') }}" 
-                   class="block px-3 py-2 rounded-md text-white bg-blue-500 hover:bg-blue-600 transition-colors">Sign Up</a>
-            {% endif %}
+            </div>
+
+            <!-- Mobile menu button -->
+            <div class="md:hidden">
+                <button type="button" 
+                        class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                        aria-controls="mobile-menu-auth"
+                        aria-expanded="false"
+                        onclick="document.getElementById('mobile-menu-auth').classList.toggle('hidden')">
+                    <span class="sr-only">Open main menu</span>
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
-</div>
+
+    <!-- Mobile menu for non-authenticated users -->
+    <div class="hidden md:hidden" id="mobile-menu-auth">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <a href="{{ url_for('auth.login') }}" 
+               class="text-gray-300 hover:bg-gray-700 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                Login
+            </a>
+            <a href="{{ url_for('auth.register') }}" 
+               class="bg-blue-600 text-white hover:bg-blue-700 block px-3 py-2 rounded-md text-base font-medium">
+                Register
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuAuth = document.getElementById('mobile-menu-auth');
+        const mobileButton = event.target.closest('button');
+        
+        if (!mobileButton && mobileMenu && !mobileMenu.contains(event.target)) {
+            mobileMenu.classList.add('hidden');
+        }
+        
+        if (!mobileButton && mobileMenuAuth && !mobileMenuAuth.contains(event.target)) {
+            mobileMenuAuth.classList.add('hidden');
+        }
+    });
+});
+</script>
