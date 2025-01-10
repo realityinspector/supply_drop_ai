@@ -1,12 +1,14 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
 from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     pass
 
 db = SQLAlchemy(model_class=Base)
+migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 
@@ -24,6 +26,9 @@ def init_extensions(app):
     
     # Initialize SQLAlchemy
     db.init_app(app)
+    
+    # Initialize Flask-Migrate
+    migrate.init_app(app, db)
     
     # Initialize Flask-Login
     login_manager.init_app(app)
