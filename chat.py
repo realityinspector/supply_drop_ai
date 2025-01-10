@@ -290,10 +290,22 @@ def analyze_documents():
                 analysis_type,
                 previous_messages if previous_messages else None
             )
-        except ValueError as ve:
-            return jsonify({'error': f'Analysis failed: {str(ve)}'}), 400
+            print(f"Analysis result received")
         except Exception as e:
-            return jsonify({'error': f'Unexpected error during analysis: {str(e)}'}), 500
+            print(f"Error in analyze_insurance_claim: {str(e)}")
+            # Check if the error message contains a JSON string
+            error_str = str(e)
+            if "Raw content:" in error_str:
+                try:
+                    # Extract the JSON part from the error message
+                    json_str = error_str.split("Raw content:", 1)[1].strip()
+                    analysis_result = json.loads(json_str)
+                    print("Successfully extracted JSON from error message")
+                except json.JSONDecodeError as je:
+                    print(f"Failed to parse JSON from error: {str(je)}")
+                    return jsonify({'error': f'Failed to parse analysis result: {str(je)}'}), 500
+            else:
+                return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
         claim = InsuranceClaim(
             user_id=current_user.id,
@@ -323,7 +335,7 @@ def analyze_documents():
         })
 
     except Exception as e:
-        current_app.logger.error(f"Error during analysis: {str(e)}")
+        print(f"Error in analyze_documents: {str(e)}")
         return jsonify({'error': f'Error during analysis: {str(e)}'}), 500
 
 @chat_bp.route('/chat')
