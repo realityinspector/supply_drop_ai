@@ -103,14 +103,23 @@ async function analyzeDocuments(analysisType) {
         const formData = new FormData();
         formData.append('analysis_type', analysisType);
         
+        // Add CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        formData.append('csrf_token', csrfToken);
+        
         const response = await fetch('{{ url_for("chat.analyze_documents") }}', {
             method: 'POST',
             body: formData,
             headers: {
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
             },
             redirect: 'follow'
         });
+
+        // Log response details for debugging
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
 
         // Check if we got redirected
         if (response.redirected) {
@@ -121,6 +130,7 @@ async function analyzeDocuments(analysisType) {
         // Try to parse response as JSON
         let data;
         const text = await response.text();
+        console.log('Response text:', text);
         try {
             data = JSON.parse(text);
         } catch (e) {

@@ -232,12 +232,22 @@ IMPORTANT:
         )
         
         if response.choices and response.choices[0].message and response.choices[0].message.content:
+            raw_content = response.choices[0].message.content
+            print(f"Raw AI response: {raw_content}")  # Log the raw response
             try:
-                return json.loads(response.choices[0].message.content)
+                return json.loads(raw_content)
             except json.JSONDecodeError as json_error:
-                raise ValueError(f"Failed to parse JSON response: {str(json_error)}")
+                print(f"JSON parsing error: {str(json_error)}")
+                print(f"Problematic content: {raw_content}")
+                # Attempt to clean and parse the response
+                cleaned_content = raw_content.strip().replace('\n', '').replace('\r', '')
+                try:
+                    return json.loads(cleaned_content)
+                except json.JSONDecodeError:
+                    raise ValueError(f"Failed to parse JSON response even after cleaning. Raw content: {raw_content}")
         raise Exception("Empty response from OpenAI")
     except Exception as e:
+        print(f"Error in analyze_insurance_claim: {str(e)}")
         raise Exception(f"Failed to analyze insurance claim: {str(e)}")
 
 def process_fema_document(file_path: Optional[str], analysis_type: str, form_id: Optional[int] = None) -> Union[List[str], Dict]:
