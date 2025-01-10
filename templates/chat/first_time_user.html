@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to Supply Drop AI{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-0">
+        <div class="text-center mb-12">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">Welcome to Supply Drop AI!</h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Let's get started by uploading your first document or starting a conversation.
+            </p>
+        </div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Getting Started</h2>
+                    
+                    <div class="space-y-8">
+                        <!-- Step 1: Upload Document -->
+                        <div class="relative">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="text-lg font-medium text-gray-900">Upload Your First Document</h3>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Start by uploading an insurance document, policy, or any other text document you'd like to analyze.
+                                    </p>
+                                    <div class="mt-4">
+                                        <a href="{{ url_for('chat.documents') }}" 
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            Upload Document
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Start a Chat -->
+                        <div class="relative">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="text-lg font-medium text-gray-900">Start a Conversation</h3>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Begin a chat with our AI to get insights, analyze documents, or ask questions about emergency preparedness.
+                                    </p>
+                                    <div class="mt-4">
+                                        <a href="{{ url_for('chat.chat_page') }}" 
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                            Start New Chat
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Insurance Wizard -->
+                        <div class="relative">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex-shrink-0">
+                                    <div class="flex items-center justify-center h-12 w-12 rounded-full bg-purple-100">
+                                        <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <h3 class="text-lg font-medium text-gray-900">Try the Insurance Wizard</h3>
+                                    <p class="mt-2 text-sm text-gray-500">
+                                        Use our specialized wizard to analyze insurance documents, compare policies, and get detailed insights.
+                                    </p>
+                                    <div class="mt-4">
+                                        <a href="{{ url_for('chat.insurance_wizard') }}" 
+                                           class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                                            Launch Insurance Wizard
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

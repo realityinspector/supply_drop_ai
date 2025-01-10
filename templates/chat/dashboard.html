@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <div class="px-4 sm:px-0">
+        <h1 class="text-2xl font-semibold text-gray-900 mb-6">Welcome back, {{ current_user.username }}!</h1>
+        
+        <!-- Recent Activity Section -->
+        <div class="mb-8">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="divide-y divide-gray-200">
+                    <!-- Recent Chats -->
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Chats</h3>
+                        <div class="space-y-3">
+                            {% for chat in chats[:5] %}
+                                <a href="{{ url_for('chat.chat_view', chat_id=chat.id) }}" 
+                                   class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm font-medium text-gray-900">{{ chat.title }}</span>
+                                        <span class="text-sm text-gray-500">{{ chat.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                    </div>
+                                </a>
+                            {% else %}
+                                <p class="text-gray-500 text-sm">No recent chats</p>
+                            {% endfor %}
+                        </div>
+                        {% if chats|length > 5 %}
+                            <div class="mt-4">
+                                <a href="{{ url_for('chat.chat_page') }}" 
+                                   class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                                    View all chats →
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Recent Documents -->
+                    <div class="px-4 py-5 sm:p-6">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Documents</h3>
+                        <div class="space-y-3">
+                            {% for document in documents[:5] %}
+                                <div class="p-4 border border-gray-200 rounded-lg">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm font-medium text-gray-900">{{ document.filename }}</span>
+                                        <span class="text-sm text-gray-500">{{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                    </div>
+                                    <div class="mt-1">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ document.processing_type }}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-gray-500 text-sm">No recent documents</p>
+                            {% endfor %}
+                        </div>
+                        {% if documents|length > 5 %}
+                            <div class="mt-4">
+                                <a href="{{ url_for('chat.documents') }}" 
+                                   class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                                    View all documents →
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mb-8">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <a href="{{ url_for('chat.chat_page') }}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">Start New Chat</p>
+                            <p class="text-sm text-gray-500">Begin a new conversation with AI</p>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    <div class="flex-shrink-0">
+                        <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <a href="{{ url_for('chat.documents') }}" class="focus:outline-none">
+                            <span class="absolute inset-0" aria-hidden="true"></span>
+                            <p class="text-sm font-medium text-gray-900">Upload Document</p>
+                            <p class="text-sm text-gray-500">Upload and process a new document</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

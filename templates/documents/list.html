@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Your Documents{% endblock %}
+
+{% block content %}
+<div class="documents-page">
+    <h1>Your Documents</h1>
+    
+    <section class="upload-form">
+        <h2>Upload New Document</h2>
+        <form action="{{ url_for('chat.upload_document') }}" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" required>
+            <select name="processing_type">
+                <option value="text">General Text</option>
+                <option value="insurance_requirements">Insurance Requirements</option>
+                <option value="insurance_claim">Insurance Claim</option>
+            </select>
+            <button type="submit">Upload</button>
+        </form>
+    </section>
+    
+    <section class="document-list">
+        <h2>Your Uploaded Documents</h2>
+        {% if documents %}
+            <ul>
+            {% for doc in documents %}
+                <li>
+                    <strong>{{ doc.filename }}</strong>
+                    <span>Uploaded on: {{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    <span>Type: {{ doc.processing_type }}</span>
+                    <span>Status: {{ doc.processing_status }}</span>
+                    {% if doc.processing_status == 'completed' %}
+                        <a href="{{ url_for('chat.view_document', document_id=doc.id) }}">View</a>
+                    {% endif %}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>You haven't uploaded any documents yet.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %} 
