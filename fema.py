@@ -8,39 +8,63 @@ from auth import login_required
 fema_bp = Blueprint('fema', __name__)
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'docx', 'txt'}
+    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @fema_bp.route('/fema/wizard')
 @login_required
 def fema_wizard():
-    return render_template('fema/wizard.html')
+    return render_template('fema/wizard.html', progress=0)
 
-@fema_bp.route('/fema/upload-requirements', methods=['POST'])
+@fema_bp.route('/fema/upload-requirements', methods=['GET', 'POST'])
 @login_required
 def upload_fema_requirements():
+    if request.method == 'GET':
+        return render_template('fema/step1_requirements.html', progress=33)
+    
+    print("Received POST request for file upload")  # Debug log
+    
     if 'file' not in request.files:
+        print("No file in request.files")  # Debug log
         return jsonify({'error': 'No file provided'}), 400
     
     file = request.files['file']
-    if file.filename == '' or not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file'}), 400
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-    file.save(filepath)
+    if file.filename == '':
+        print("Empty filename")  # Debug log
+        return jsonify({'error': 'No file selected'}), 400
+        
+    if not allowed_file(file.filename):
+        print(f"Invalid file type: {file.filename}")  # Debug log
+        return jsonify({'error': 'Invalid file type. Please upload a PDF, DOCX, or TXT file.'}), 400
 
     try:
+        # Create upload folder if it doesn't exist
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Save file with secure filename
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(upload_folder, filename)
+        print(f"Saving file to: {filepath}")  # Debug log
+        file.save(filepath)
+
         # Create new FEMA form entry
         fema_form = FEMAForm(
-            user_id=request.user.id,
+            user_id=current_user.id,
             form_type='requirements',
             status='in_progress'
         )
         db.session.add(fema_form)
         db.session.flush()
 
+        print(f"Processing document: {filepath}")  # Debug log
         # Process requirements document
-        requirements = process_fema_document(filepath, 'requirements')
+        try:
+            requirements = process_fema_document(filepath, 'requirements')
+            print(f"Extracted requirements: {requirements}")  # Debug log
+        except Exception as e:
+            print(f"Error processing document: {str(e)}")  # Debug log
+            return jsonify({'error': f'Error processing document: {str(e)}'}), 500
         
         # Create requirement entries
         for req in requirements:
@@ -52,6 +76,8 @@ def upload_fema_requirements():
             db.session.add(requirement)
 
         db.session.commit()
+        print("Successfully processed file and saved requirements")  # Debug log
+        
         return jsonify({
             'success': True,
             'form_id': fema_form.id,
@@ -59,6 +85,7 @@ def upload_fema_requirements():
         })
 
     except Exception as e:
+        print(f"Error in upload process: {str(e)}")  # Debug log
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 

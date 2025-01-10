@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="en" class="h-full bg-gray-100">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -60,9 +60,10 @@
 <body class="h-full">
     {% include '_nav.html' %}
     
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="fixed top-16 right-4 z-50 space-y-4">
+    <!-- Flash Messages -->
+    <div class="flash-messages fixed top-16 right-4 z-50 space-y-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
                 {% for category, message in messages %}
                     <div class="rounded-md p-4 {% if category == 'error' %}bg-red-50 text-red-800{% else %}bg-green-50 text-green-800{% endif %} shadow-lg">
                         <div class="flex">
@@ -81,28 +82,38 @@
                                 <p class="text-sm font-medium">{{ message }}</p>
                             </div>
                             <div class="ml-auto pl-3">
-                                <div class="-mx-1.5 -my-1.5">
-                                    <button type="button" 
-                                            onclick="this.parentElement.parentElement.parentElement.parentElement.remove()"
-                                            class="inline-flex rounded-md p-1.5 {% if category == 'error' %}text-red-500 hover:bg-red-100{% else %}text-green-500 hover:bg-green-100{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 {% if category == 'error' %}focus:ring-red-500{% else %}focus:ring-green-500{% endif %}">
-                                        <span class="sr-only">Dismiss</span>
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                        </svg>
-                                    </button>
-                                </div>
+                                <button type="button" onclick="this.closest('.flash-messages > div').remove()" class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 {% if category == 'error' %}text-red-500 hover:bg-red-100 focus:ring-red-600{% else %}text-green-500 hover:bg-green-100 focus:ring-green-600{% endif %}">
+                                    <span class="sr-only">Dismiss</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
                 {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
     {% block content %}{% endblock %}
     {% include '_footer.html' %}
     
     {% block extra_js %}{% endblock %}
     
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    
+    <script>
+    // Debug information
+    console.log('Base template loaded');
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        const flashMessages = document.querySelector('.flash-messages');
+        if (flashMessages) {
+            console.log('Flash messages container found');
+            console.log('Current flash messages:', flashMessages.innerHTML);
+        }
+    });
+    </script>
 </body>
 </html>

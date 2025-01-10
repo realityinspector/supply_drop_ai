@@ -2,7 +2,9 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
+from flask import jsonify, request, redirect, url_for
 
 class Base(DeclarativeBase):
     pass
@@ -10,7 +12,15 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 login_manager.login_view = "auth.login"
+
+# Configure login manager to handle AJAX requests
+@login_manager.unauthorized_handler
+def unauthorized():
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify(error='Authentication required'), 401
+    return redirect(url_for('auth.login'))
 
 def init_extensions(app):
     """Initialize Flask extensions"""
@@ -32,6 +42,9 @@ def init_extensions(app):
     
     # Initialize Flask-Login
     login_manager.init_app(app)
+    
+    # Initialize CSRF protection
+    csrf.init_app(app)
 
 @login_manager.user_loader
 def load_user(user_id):

@@ -4,8 +4,12 @@ from openai import OpenAI
 import PyPDF2
 from docx import Document as DocxDocument
 import io
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union, Optional
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam
+from PyPDF2 import PdfReader
+from docx import Document
+import openai
+from models import db, FEMAForm, FEMARequirement, FEMAAnalysis
 
 # Initialize OpenAI client
 client = OpenAI()
@@ -223,7 +227,7 @@ IMPORTANT:
         ]
 
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=messages
         )
         
@@ -235,3 +239,224 @@ IMPORTANT:
         raise Exception("Empty response from OpenAI")
     except Exception as e:
         raise Exception(f"Failed to analyze insurance claim: {str(e)}")
+
+def process_fema_document(file_path: Optional[str], analysis_type: str, form_id: Optional[int] = None) -> Union[List[str], Dict]:
+    """Process FEMA documents for various analysis types."""
+    print(f"Starting document processing - Type: {analysis_type}, Path: {file_path}")  # Debug log
+    
+    # Load prompts
+    try:
+        with open('prompts.json', 'r') as f:
+            prompts = json.load(f)
+    except Exception as e:
+        print(f"Error loading prompts: {str(e)}")  # Debug log
+        raise Exception("Failed to load processing prompts")
+
+    if analysis_type == 'requirements':
+        if not file_path or not os.path.exists(file_path):
+            print(f"File not found: {file_path}")  # Debug log
+            raise ValueError("File not found or invalid file path")
+
+        # Extract requirements from uploaded document
+        try:
+            text = extract_text_from_document(file_path)
+            print(f"Extracted text length: {len(text)}")  # Debug log
+            requirements = analyze_requirements(text, prompts['fema_requirements'])
+            print(f"Analyzed requirements count: {len(requirements)}")  # Debug log
+            return requirements
+        except Exception as e:
+            print(f"Error in requirements processing: {str(e)}")  # Debug log
+            raise Exception(f"Failed to process requirements: {str(e)}")
+
+    # For other analysis types, we need the form_id
+    if not form_id:
+        raise ValueError("form_id is required for this analysis type")
+
+    # Get the form and its requirements
+    form = FEMAForm.query.get(form_id)
+    if not form:
+        raise ValueError("Invalid form ID")
+
+    requirements = [req.requirement_text for req in form.requirements]
+    
+    # Get the form text if we're analyzing a new upload
+    form_text = ""
+    if file_path:
+        try:
+            form_text = extract_text_from_document(file_path)
+        except Exception as e:
+            print(f"Error extracting text from form: {str(e)}")  # Debug log
+            raise Exception(f"Failed to extract text from form: {str(e)}")
+    else:
+        # Get the latest analysis of type 'form' for this form_id
+        form_analysis = FEMAAnalysis.query.filter_by(
+            fema_form_id=form_id,
+            analysis_type='form'
+        ).order_by(FEMAAnalysis.created_at.desc()).first()
+        
+        if form_analysis:
+            form_text = form_analysis.content.get('text', '')
+
+    if not form_text:
+        raise ValueError("No form text available for analysis")
+
+    # Perform the requested analysis
+    try:
+        if analysis_type == 'form':
+            return {
+                'text': form_text,
+                'analysis': analyze_form(form_text, requirements, prompts['fema_form_analysis'])
+            }
+        elif analysis_type == 'explanation':
+            return analyze_form_explanation(form_text, prompts['fema_form_explanation'])
+        elif analysis_type == 'enhancement':
+            return analyze_form_enhancement(form_text, requirements, prompts['fema_form_enhancement'])
+        elif analysis_type == 'rejection':
+            return analyze_rejection_reasons(form_text, requirements, prompts['fema_form_rejection'])
+        elif analysis_type == 'language':
+            return analyze_language(form_text, prompts['fema_form_language'])
+        else:
+            raise ValueError(f"Unknown analysis type: {analysis_type}")
+    except Exception as e:
+        print(f"Error in analysis: {str(e)}")  # Debug log
+        raise Exception(f"Failed to analyze document: {str(e)}")
+
+def extract_text_from_document(file_path: str) -> str:
+    """Extract text from PDF, DOCX, or TXT files."""
+    print(f"Extracting text from: {file_path}")  # Debug log
+    
+    _, ext = os.path.splitext(file_path)
+    ext = ext.lower()
+
+    try:
+        if ext == '.pdf':
+            reader = PdfReader(file_path)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+        elif ext == '.docx':
+            doc = Document(file_path)
+            text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+        elif ext == '.txt':
+            with open(file_path, 'r') as f:
+                text = f.read()
+        else:
+            raise ValueError(f"Unsupported file type: {ext}")
+
+        print(f"Successfully extracted {len(text)} characters")  # Debug log
+        return text
+    except Exception as e:
+        print(f"Error extracting text: {str(e)}")  # Debug log
+        raise Exception(f"Failed to extract text from file: {str(e)}")
+
+def analyze_requirements(text: str, prompt: str) -> List[str]:
+    """Extract requirements from document text."""
+    print("Starting requirements analysis")  # Debug log
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": text}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+
+        # Extract requirements from the response
+        requirements = []
+        for line in response.choices[0].message.content.split('\n'):
+            line = line.strip()
+            if line and not line.startswith('#') and not line.startswith('-'):
+                requirements.append(line)
+
+        print(f"Extracted {len(requirements)} requirements")  # Debug log
+        return requirements
+    except Exception as e:
+        print(f"Error in requirements analysis: {str(e)}")  # Debug log
+        raise Exception(f"Failed to analyze requirements: {str(e)}")
+
+def analyze_form(text: str, requirements: List[str], prompt: str) -> Dict:
+    """Analyze the form against requirements."""
+    
+    context = f"Requirements:\n" + "\n".join(f"- {req}" for req in requirements)
+    context += f"\n\nForm Text:\n{text}"
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": context}
+        ],
+        temperature=0.7,
+        max_tokens=2000
+    )
+
+    return json.loads(response.choices[0].message.content)
+
+def analyze_form_explanation(text: str, prompt: str) -> Dict:
+    """Generate a detailed explanation of the form content."""
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": text}
+        ],
+        temperature=0.7,
+        max_tokens=2000
+    )
+
+    return json.loads(response.choices[0].message.content)
+
+def analyze_form_enhancement(text: str, requirements: List[str], prompt: str) -> Dict:
+    """Suggest enhancements for the form."""
+    
+    context = f"Requirements:\n" + "\n".join(f"- {req}" for req in requirements)
+    context += f"\n\nForm Text:\n{text}"
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": context}
+        ],
+        temperature=0.7,
+        max_tokens=2000
+    )
+
+    return json.loads(response.choices[0].message.content)
+
+def analyze_rejection_reasons(text: str, requirements: List[str], prompt: str) -> Dict:
+    """Identify potential reasons for form rejection."""
+    
+    context = f"Requirements:\n" + "\n".join(f"- {req}" for req in requirements)
+    context += f"\n\nForm Text:\n{text}"
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": context}
+        ],
+        temperature=0.7,
+        max_tokens=2000
+    )
+
+    return json.loads(response.choices[0].message.content)
+
+def analyze_language(text: str, prompt: str) -> Dict:
+    """Analyze the language and writing style of the form."""
+    
+    response = openai.ChatCompletion.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": text}
+        ],
+        temperature=0.7,
+        max_tokens=2000
+    )
+
+    return json.loads(response.choices[0].message.content)

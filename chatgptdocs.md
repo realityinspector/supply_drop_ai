@@ -64,18 +64,18 @@ curl https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $OPENAI_API_KEY" \
   -d '{
-     "model": "gpt-3.5-turbo",
+     "model": "gpt-4o",
      "messages": [{"role": "user", "content": "Say this is a test!"}],
      "temperature": 0.7
    }'
 
-This request queries the gpt-3.5-turbo model (which under the hood points to a gpt-3.5-turbo model variant) to complete the text starting with a prompt of "Say this is a test". You should get a response back that resembles the following:
+This request queries the gpt-4o model (which under the hood points to a gpt-4o model variant) to complete the text starting with a prompt of "Say this is a test". You should get a response back that resembles the following:
 
 {
     "id": "chatcmpl-abc123",
     "object": "chat.completion",
     "created": 1677858242,
-    "model": "gpt-3.5-turbo-0613",
+    "model": "gpt-4o-0613",
     "usage": {
         "prompt_tokens": 13,
         "completion_tokens": 7,
@@ -108,7 +108,7 @@ from openai import OpenAI
 client = OpenAI()
 
 stream = client.chat.completions.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4o",
     messages=[{"role": "user", "content": "Say this is a test"}],
     stream=True,
 )
@@ -124,7 +124,7 @@ const openai = new OpenAI();
 
 async function main() {
     const stream = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [{ role: "user", content: "Say this is a test" }],
         stream: true,
     });
@@ -480,7 +480,7 @@ response_format
 object
 Optional
 
-An object specifying the format that the model must output. Compatible with GPT-4 Turbo and all GPT-3.5 Turbo models newer than gpt-3.5-turbo-1106.
+An object specifying the format that the model must output. Compatible with gpt-4o Turbo and all GPT-3.5 Turbo models newer than gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -603,7 +603,7 @@ Response
   "id": "chatcmpl-123",
   "object": "chat.completion",
   "created": 1677652288,
-  "model": "gpt-3.5-turbo-0125",
+  "model": "gpt-4o-0125",
   "system_fingerprint": "fp_44709d6fcb",
   "choices": [{
     "index": 0,
@@ -667,7 +667,7 @@ The chat completion object
   "id": "chatcmpl-123",
   "object": "chat.completion",
   "created": 1677652288,
-  "model": "gpt-3.5-turbo-0125",
+  "model": "gpt-4o-0125",
   "system_fingerprint": "fp_44709d6fcb",
   "choices": [{
     "index": 0,
@@ -725,13 +725,13 @@ object
 An optional field that will only be present when you set stream_options: {"include_usage": true} in your request. When present, it contains a null value except for the last chunk which contains the token usage statistics for the entire request.
 The chat completion chunk object
 
-{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
+{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-4o-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}]}
 
-{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}]}
+{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-4o-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}]}
 
 ....
 
-{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-3.5-turbo-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}]}
+{"id":"chatcmpl-123","object":"chat.completion.chunk","created":1694268190,"model":"gpt-4o-0125", "system_fingerprint": "fp_44709d6fcb", "choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}]}
 
 Embeddings
 
@@ -893,7 +893,7 @@ Defaults to null
 
 A string of up to 18 characters that will be added to your fine-tuned model name.
 
-For example, a suffix of "custom-model-name" would produce a model name like ft:gpt-3.5-turbo:openai:custom-model-name:7p4lURel.
+For example, a suffix of "custom-model-name" would produce a model name like ft:gpt-4o:openai:custom-model-name:7p4lURel.
 validation_file
 
 string or null
@@ -929,7 +929,7 @@ client = OpenAI()
 
 client.fine_tuning.jobs.create(
   training_file="file-abc123",
-  model="gpt-3.5-turbo"
+  model="gpt-4o"
 )
 
 Response
@@ -937,7 +937,7 @@ Response
 {
   "object": "fine_tuning.job",
   "id": "ftjob-abc123",
-  "model": "gpt-3.5-turbo-0125",
+  "model": "gpt-4o-0125",
   "created_at": 1614807352,
   "fine_tuned_model": null,
   "organization_id": "org-123",
@@ -1055,7 +1055,7 @@ Response
       "id": "ft-event-tyiGuB72evQncpH87xe505Sv",
       "created_at": 1692407400,
       "level": "info",
-      "message": "New fine-tuned model created: ft:gpt-3.5-turbo:openai::7p4lURel",
+      "message": "New fine-tuned model created: ft:gpt-4o:openai::7p4lURel",
       "data": null,
       "type": "message"
     }
@@ -1107,7 +1107,7 @@ Response
       "object": "fine_tuning.job.checkpoint",
       "id": "ftckpt_zc4Q7MP6XxulcVzj4MZdwsAB",
       "created_at": 1519129973,
-      "fine_tuned_model_checkpoint": "ft:gpt-3.5-turbo-0125:my-org:custom-suffix:96olL566:ckpt-step-2000",
+      "fine_tuned_model_checkpoint": "ft:gpt-4o-0125:my-org:custom-suffix:96olL566:ckpt-step-2000",
       "metrics": {
         "full_valid_loss": 0.134,
         "full_valid_mean_token_accuracy": 0.874
@@ -1119,7 +1119,7 @@ Response
       "object": "fine_tuning.job.checkpoint",
       "id": "ftckpt_enQCFmOTGj3syEpYVhBRLTSy",
       "created_at": 1519129833,
-      "fine_tuned_model_checkpoint": "ft:gpt-3.5-turbo-0125:my-org:custom-suffix:7q8mpxmy:ckpt-step-1000",
+      "fine_tuned_model_checkpoint": "ft:gpt-4o-0125:my-org:custom-suffix:7q8mpxmy:ckpt-step-1000",
       "metrics": {
         "full_valid_loss": 0.167,
         "full_valid_mean_token_accuracy": 0.781
@@ -1213,7 +1213,7 @@ Response
 {
   "object": "fine_tuning.job",
   "id": "ftjob-abc123",
-  "model": "gpt-3.5-turbo-0125",
+  "model": "gpt-4o-0125",
   "created_at": 1689376978,
   "fine_tuned_model": null,
   "organization_id": "org-123",
@@ -1445,7 +1445,7 @@ The fine-tuning job checkpoint object
   "object": "fine_tuning.job.checkpoint",
   "id": "ftckpt_qtZ5Gyk4BLq1SfLFWp3RtO3P",
   "created_at": 1712211699,
-  "fine_tuned_model_checkpoint": "ft:gpt-3.5-turbo-0125:my-org:custom_suffix:9ABel2dg:ckpt-step-88",
+  "fine_tuned_model_checkpoint": "ft:gpt-4o-0125:my-org:custom_suffix:9ABel2dg:ckpt-step-88",
   "fine_tuning_job_id": "ftjob-fpbNQ3H1GrMehXRf8cO97xTN",
   "metrics": {
     "step": 88,
@@ -1875,7 +1875,7 @@ string
 The OpenAI API relative URL to be used for the request. Currently /v1/chat/completions, /v1/embeddings, and /v1/completions are supported.
 The request input object
 
-{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "gpt-3.5-turbo", "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is 2+2?"}]}}
+{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "gpt-4o", "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is 2+2?"}]}}
 
 The request output object
 
@@ -1898,7 +1898,7 @@ object or null
 For requests that failed with a non-HTTP error, this will contain more information on the cause of the failure.
 The request output object
 
-{"id": "batch_req_wnaDys", "custom_id": "request-2", "response": {"status_code": 200, "request_id": "req_c187b3", "body": {"id": "chatcmpl-9758Iw", "object": "chat.completion", "created": 1711475054, "model": "gpt-3.5-turbo", "choices": [{"index": 0, "message": {"role": "assistant", "content": "2 + 2 equals 4."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 24, "completion_tokens": 15, "total_tokens": 39}, "system_fingerprint": null}}, "error": null}
+{"id": "batch_req_wnaDys", "custom_id": "request-2", "response": {"status_code": 200, "request_id": "req_c187b3", "body": {"id": "chatcmpl-9758Iw", "object": "chat.completion", "created": 1711475054, "model": "gpt-4o", "choices": [{"index": 0, "message": {"role": "assistant", "content": "2 + 2 equals 4."}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 24, "completion_tokens": 15, "total_tokens": 39}, "system_fingerprint": null}}, "error": null}
 
 Files
 
@@ -2493,19 +2493,19 @@ Returns
 
 The model object matching the specified ID.
 Example request
-gpt-3.5-turbo-instruct
+gpt-4o-instruct
 python
 
 from openai import OpenAI
 client = OpenAI()
 
-client.models.retrieve("gpt-3.5-turbo-instruct")
+client.models.retrieve("gpt-4o-instruct")
 
 Response
-gpt-3.5-turbo-instruct
+gpt-4o-instruct
 
 {
-  "id": "gpt-3.5-turbo-instruct",
+  "id": "gpt-4o-instruct",
   "object": "model",
   "created": 1686935002,
   "owned_by": "openai"
@@ -2532,12 +2532,12 @@ python
 from openai import OpenAI
 client = OpenAI()
 
-client.models.delete("ft:gpt-3.5-turbo:acemeco:suffix:abc123")
+client.models.delete("ft:gpt-4o:acemeco:suffix:abc123")
 
 Response
 
 {
-  "id": "ft:gpt-3.5-turbo:acemeco:suffix:abc123",
+  "id": "ft:gpt-4o:acemeco:suffix:abc123",
   "object": "model",
   "deleted": true
 }
@@ -2781,7 +2781,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -2799,7 +2799,7 @@ my_assistant = client.beta.assistants.create(
     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
     name="Math Tutor",
     tools=[{"type": "code_interpreter"}],
-    model="gpt-4-turbo",
+    model="gpt-4o-turbo",
 )
 print(my_assistant)
 
@@ -2811,7 +2811,7 @@ Response
   "created_at": 1698984975,
   "name": "Math Tutor",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
   "tools": [
     {
@@ -2882,7 +2882,7 @@ Response
       "created_at": 1698982736,
       "name": "Coding Tutor",
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": "You are a helpful assistant designed to make me better at coding!",
       "tools": [],
       "tool_resources": {},
@@ -2897,7 +2897,7 @@ Response
       "created_at": 1698982718,
       "name": "My Assistant",
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": "You are a helpful assistant designed to make me better at coding!",
       "tools": [],
       "tool_resources": {},
@@ -2912,7 +2912,7 @@ Response
       "created_at": 1698982643,
       "name": null,
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "tools": [],
       "tool_resources": {},
@@ -2959,7 +2959,7 @@ Response
   "created_at": 1699009709,
   "name": "HR Helper",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies.",
   "tools": [
     {
@@ -3047,7 +3047,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -3066,7 +3066,7 @@ my_updated_assistant = client.beta.assistants.update(
   instructions="You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
   name="HR Helper",
   tools=[{"type": "file_search"}],
-  model="gpt-4-turbo"
+  model="gpt-4o-turbo"
 )
 
 print(my_updated_assistant)
@@ -3079,7 +3079,7 @@ Response
   "created_at": 1699009709,
   "name": "HR Helper",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
   "tools": [
     {
@@ -3198,7 +3198,7 @@ response_format
 
 string or object
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -3211,7 +3211,7 @@ The assistant object
   "created_at": 1698984975,
   "name": "Math Tutor",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
   "tools": [
     {
@@ -4010,7 +4010,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -4046,7 +4046,7 @@ Response
   "failed_at": null,
   "completed_at": 1699063291,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -4173,7 +4173,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -4214,7 +4214,7 @@ Response
   "completed_at": null,
   "required_action": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a helpful assistant.",
   "tools": [],
   "tool_resources": {},
@@ -4306,7 +4306,7 @@ Response
       "failed_at": null,
       "completed_at": 1699075073,
       "last_error": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "incomplete_details": null,
       "tools": [
@@ -4353,7 +4353,7 @@ Response
       "failed_at": null,
       "completed_at": 1699063291,
       "last_error": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "incomplete_details": null,
       "tools": [
@@ -4442,7 +4442,7 @@ Response
   "failed_at": null,
   "completed_at": 1699075073,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -4526,7 +4526,7 @@ Response
   "failed_at": null,
   "completed_at": 1699075073,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -4631,7 +4631,7 @@ Response
   "failed_at": null,
   "completed_at": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "tools": [
     {
@@ -4720,7 +4720,7 @@ Response
   "failed_at": null,
   "completed_at": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You summarize books.",
   "tools": [
     {
@@ -4878,7 +4878,7 @@ response_format
 
 string or object
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -4898,7 +4898,7 @@ The run object
   "failed_at": null,
   "completed_at": 1699073498,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "tools": [{"type": "file_search"}, {"type": "code_interpreter"}],
   "metadata": {},
@@ -6504,7 +6504,7 @@ Defaults to null
 
 The suffix that comes after a completion of inserted text.
 
-This parameter is only supported for gpt-3.5-turbo-instruct.
+This parameter is only supported for gpt-4o-instruct.
 temperature
 
 number or null
@@ -6533,27 +6533,27 @@ Returns
 
 Returns a completion object, or a sequence of completion objects if the request is streamed.
 Example request
-gpt-3.5-turbo-instruct
+gpt-4o-instruct
 python
 
 from openai import OpenAI
 client = OpenAI()
 
 client.completions.create(
-  model="gpt-3.5-turbo-instruct",
+  model="gpt-4o-instruct",
   prompt="Say this is a test",
   max_tokens=7,
   temperature=0
 )
 
 Response
-gpt-3.5-turbo-instruct
+gpt-4o-instruct
 
 {
   "id": "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7",
   "object": "text_completion",
   "created": 1589478378,
-  "model": "gpt-3.5-turbo-instruct",
+  "model": "gpt-4o-instruct",
   "system_fingerprint": "fp_44709d6fcb",
   "choices": [
     {
@@ -6616,7 +6616,7 @@ The completion object
   "id": "cmpl-uqkvlQyYK7bGYrRHQ0eXlWi7",
   "object": "text_completion",
   "created": 1589478378,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "choices": [
     {
       "text": "\n\nThis is indeed a test",
@@ -6708,7 +6708,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -6726,7 +6726,7 @@ my_assistant = client.beta.assistants.create(
     instructions="You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
     name="Math Tutor",
     tools=[{"type": "code_interpreter"}],
-    model="gpt-4-turbo",
+    model="gpt-4o-turbo",
 )
 print(my_assistant)
 
@@ -6738,7 +6738,7 @@ Response
   "created_at": 1698984975,
   "name": "Math Tutor",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
   "tools": [
     {
@@ -6853,7 +6853,7 @@ Response
       "created_at": 1698982736,
       "name": "Coding Tutor",
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": "You are a helpful assistant designed to make me better at coding!",
       "tools": [],
       "file_ids": [],
@@ -6868,7 +6868,7 @@ Response
       "created_at": 1698982718,
       "name": "My Assistant",
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": "You are a helpful assistant designed to make me better at coding!",
       "tools": [],
       "file_ids": [],
@@ -6883,7 +6883,7 @@ Response
       "created_at": 1698982643,
       "name": null,
       "description": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "tools": [],
       "file_ids": [],
@@ -7006,7 +7006,7 @@ Response
   "created_at": 1699009709,
   "name": "HR Helper",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies.",
   "tools": [
     {
@@ -7137,7 +7137,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -7156,7 +7156,7 @@ my_updated_assistant = client.beta.assistants.update(
   instructions="You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
   name="HR Helper",
   tools=[{"type": "retrieval"}],
-  model="gpt-4-turbo",
+  model="gpt-4o-turbo",
   file_ids=["file-abc123", "file-abc456"],
 )
 
@@ -7170,7 +7170,7 @@ Response
   "created_at": 1699009709,
   "name": "HR Helper",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are an HR bot, and you have access to files to answer employee questions about company policies. Always response with info from either of the files.",
   "tools": [
     {
@@ -7327,7 +7327,7 @@ response_format
 
 string or object
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -7340,7 +7340,7 @@ The assistant object (v1)
   "created_at": 1698984975,
   "name": "Math Tutor",
   "description": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a personal math tutor. When asked a question, write and run Python code to answer the question.",
   "tools": [
     {
@@ -8274,7 +8274,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -8310,7 +8310,7 @@ Response
   "failed_at": null,
   "completed_at": 1699063291,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -8425,7 +8425,7 @@ response_format
 string or object
 Optional
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -8465,7 +8465,7 @@ Response
   "failed_at": null,
   "completed_at": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You are a helpful assistant.",
   "tools": [],
   "file_ids": [],
@@ -8546,7 +8546,7 @@ Response
       "failed_at": null,
       "completed_at": 1699075073,
       "last_error": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "incomplete_details": null,
       "tools": [
@@ -8588,7 +8588,7 @@ Response
       "failed_at": null,
       "completed_at": 1699063291,
       "last_error": null,
-      "model": "gpt-4-turbo",
+      "model": "gpt-4o-turbo",
       "instructions": null,
       "incomplete_details": null,
       "tools": [
@@ -8770,7 +8770,7 @@ Response
   "failed_at": null,
   "completed_at": 1699075073,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -8927,7 +8927,7 @@ Response
   "failed_at": null,
   "completed_at": 1699075073,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -9027,7 +9027,7 @@ Response
   "failed_at": null,
   "completed_at": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "incomplete_details": null,
   "tools": [
@@ -9117,7 +9117,7 @@ Response
   "failed_at": null,
   "completed_at": null,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": "You summarize books.",
   "tools": [
     {
@@ -9262,7 +9262,7 @@ response_format
 
 string or object
 
-Specifies the format that the model must output. Compatible with GPT-4o, GPT-4 Turbo, and all GPT-3.5 Turbo models since gpt-3.5-turbo-1106.
+Specifies the format that the model must output. Compatible with gpt-4o, gpt-4o Turbo, and all GPT-3.5 Turbo models since gpt-4o-1106.
 
 Setting to { "type": "json_object" } enables JSON mode, which guarantees the message the model generates is valid JSON.
 
@@ -9282,7 +9282,7 @@ The run object (v1)
   "failed_at": null,
   "completed_at": 1699073498,
   "last_error": null,
-  "model": "gpt-4-turbo",
+  "model": "gpt-4o-turbo",
   "instructions": null,
   "tools": [{"type": "retrieval"}, {"type": "code_interpreter"}],
   "file_ids": [],

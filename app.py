@@ -9,6 +9,7 @@ from database import test_connection, attempt_recovery, connection_state, CONNEC
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from filters import from_json
+from fema import fema_bp
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -133,12 +134,16 @@ def create_app(config=None):
 
     # Register blueprints
     from auth import auth_bp
-    from chat import chat_bp
-    from profile import profile_bp
-    
     app.register_blueprint(auth_bp)
+    
+    from abbot import bp as abbot_bp
+    app.register_blueprint(abbot_bp)
+    
+    from chat import chat_bp
     app.register_blueprint(chat_bp)
+    from profile import profile_bp
     app.register_blueprint(profile_bp)
+    app.register_blueprint(fema_bp)
 
     # Initialize database tables
     with app.app_context():
