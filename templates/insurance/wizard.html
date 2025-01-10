@@ -75,14 +75,30 @@
                     <h2 class="text-lg font-medium text-gray-900 mb-4">Step 3: Analysis Options</h2>
                     <form action="{{ url_for('chat.analyze_documents') }}" method="post">
                         <div class="space-y-4">
-                            {% for analysis_type in ['critique', 'enhance', 'formalize', 'grammar'] %}
-                                <div class="flex items-center">
-                                    <input id="{{ analysis_type }}" name="analysis_type" type="radio" value="{{ analysis_type }}" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
-                                    <label for="{{ analysis_type }}" class="ml-3 block text-sm font-medium text-gray-700">
-                                        {{ analysis_type|capitalize }}
-                                    </label>
-                                </div>
-                            {% endfor %}
+                            <div class="flex items-center">
+                                <input id="explain" name="analysis_type" type="radio" value="explain" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                <label for="explain" class="ml-3 block text-sm font-medium text-gray-700">
+                                    Policy Explanation (25 Key Points)
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="enhance" name="analysis_type" type="radio" value="enhance" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                <label for="enhance" class="ml-3 block text-sm font-medium text-gray-700">
+                                    Coverage Enhancement (25 Additional Items)
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="mock_rejection" name="analysis_type" type="radio" value="mock_rejection" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                <label for="mock_rejection" class="ml-3 block text-sm font-medium text-gray-700">
+                                    Mock Rejection Analysis (25 Potential Issues)
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <input id="language" name="analysis_type" type="radio" value="language" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300">
+                                <label for="language" class="ml-3 block text-sm font-medium text-gray-700">
+                                    Language & Strategic Review
+                                </label>
+                            </div>
                         </div>
                         <button type="submit" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Start Analysis
