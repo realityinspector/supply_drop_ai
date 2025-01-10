@@ -110,26 +110,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData();
             formData.append('reuse_document_id', docId);
+            
+            // Add CSRF token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            formData.append('csrf_token', csrfToken);
 
             // Show loading state
             const loadingOverlay = document.getElementById('loadingOverlay');
             loadingOverlay.classList.remove('hidden');
             loadingOverlay.style.opacity = '1';
 
-            fetch('/insurance/upload-claim', {
+            fetch('{{ url_for("chat.upload_claim") }}', {
                 method: 'POST',
-                body: formData
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: formData,
+                redirect: 'follow'
             })
             .then(response => {
+                console.log('Response status:', response.status);
                 if (response.redirected) {
                     window.location.href = response.url;
+                    return;
+                }
+                
+                if (response.ok) {
+                    window.location.href = '{{ url_for("chat.insurance_wizard", step=3) }}';
+                } else {
+                    return response.text().then(text => {
+                        console.error('Error:', text);
+                        throw new Error(text);
+                    });
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
                 loadingOverlay.style.opacity = '0';
                 setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
-                alert('Failed to reuse document. Please try again.');
+                alert('Failed to reuse document: ' + error.message);
             });
         });
     }

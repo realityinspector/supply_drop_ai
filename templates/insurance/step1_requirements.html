@@ -89,22 +89,56 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function submitForm(formData) {
+        // Add CSRF token from meta tag
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        formData.append('csrf_token', csrfToken);
+
+        // Log the formData being sent
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+
         fetch('{{ url_for("chat.upload_requirements") }}', {
             method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken
+            },
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Update UI or redirect as needed
-                window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
+        .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json().then(data => {
+                        console.log('JSON response:', data);
+                        if (data.success) {
+                            window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
+                        } else {
+                            alert(data.error || 'An error occurred while processing your request.');
+                        }
+                    });
+                } else {
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            } else if (response.status === 400) {
+                return response.text().then(text => {
+                    console.error('Bad Request Error:', text);
+                    alert('Bad Request Error: ' + text);
+                });
             } else {
-                alert(data.error || 'An error occurred while processing your request.');
+                throw new Error('Network response was not ok.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while processing your request.');
+            alert('An error occurred while processing your request: ' + error.message);
         });
     }
 });

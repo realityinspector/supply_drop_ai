@@ -90,6 +90,13 @@ async function createNewChat() {
 
 // Load conversations
 async function loadConversations() {
+    // Check if we're on a page that needs conversations
+    const list = document.getElementById('conversation-list');
+    if (!list) {
+        // Not on a page that shows conversations, this is normal
+        return;
+    }
+
     try {
         console.log("Loading conversations...");
         const response = await fetch('/abbot/api/conversations', {
@@ -102,17 +109,10 @@ async function loadConversations() {
         const conversations = await handleResponse(response, 'Error loading conversations');
         console.log("Conversations loaded:", conversations);
         
-        const list = document.getElementById('conversation-list');
-        if (!list) {
-            console.error('Conversation list element not found');
-            return;
-        }
-
+        // Render conversations
         list.innerHTML = conversations.map(conv => `
-            <div class="conversation-item p-4 hover:bg-gray-100 cursor-pointer ${currentConversationId === conv.id ? 'bg-gray-100' : ''}"
-                 data-id="${conv.id}">
-                <div class="font-medium">${conv.title}</div>
-                <div class="text-sm text-gray-500">${new Date(conv.updated_at).toLocaleString()}</div>
+            <div class="conversation-item" data-id="${conv.id}">
+                <span>${conv.title || 'Untitled Conversation'}</span>
             </div>
         `).join('');
 
