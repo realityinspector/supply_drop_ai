@@ -11,6 +11,8 @@ import time
 from typing import List, Dict, Any, Optional
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMessageParam, ChatCompletionUserMessageParam, ChatCompletionAssistantMessageParam
 from werkzeug.utils import secure_filename
+from sqlalchemy.exc import SQLAlchemyError
+from abbot import ContextManager, get_system_prompt
 
 # Setup logging with more detailed format
 logging.basicConfig(
@@ -44,19 +46,11 @@ def exponential_backoff(attempt):
 
 @chat_bp.route('/')
 def index():
-    if current_user.is_authenticated:
-        user_chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
-        user_documents = Document.query.filter_by(user_id=current_user.id).order_by(Document.uploaded_at.desc()).all()
-        
-        if not user_chats and not user_documents:
-            # First-time user
-            return render_template('chat/first_time_user.html')
-        else:
-            # Returning user
-            return render_template('chat/dashboard.html', chats=user_chats, documents=user_documents)
-    else:
-        # Non-authenticated user
+    """Main chat page - redirects to Abbot AI chat."""
+    if not current_user.is_authenticated:
         return render_template('index.html')
+    
+    return redirect(url_for('abbot.chat'))
 
 @chat_bp.route('/documents')
 @login_required
@@ -349,16 +343,14 @@ def chat_view(chat_id):
     """Display a specific chat conversation."""
     chat = Chat.query.filter_by(id=chat_id, user_id=current_user.id).first_or_404()
     messages = Message.query.filter_by(chat_id=chat_id).order_by(Message.created_at).all()
-    documents = chat.documents if chat.documents else []
-
-    # Get the insurance claim associated with this chat
-    insurance_claim = InsuranceClaim.query.filter_by(user_id=current_user.id).order_by(InsuranceClaim.id.desc()).first()
-
+    
+    # Get all user's chats for the sidebar
+    user_chats = Chat.query.filter_by(user_id=current_user.id).order_by(Chat.created_at.desc()).all()
+    
     return render_template('chat/detail.html', 
-                           chat=chat, 
-                           messages=messages, 
-                           documents=documents,
-                           insurance_claim=insurance_claim)
+                         chat=chat, 
+                         messages=messages,
+                         chats=user_chats)
 
 @chat_bp.route('/chat/<int:chat_id>/messages', methods=['POST'])
 @login_required
@@ -412,7 +404,7 @@ Here's the context from the user's documents:
 
         # Call OpenAI API
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=messages_for_api
         )
 
@@ -436,35 +428,6 @@ Here's the context from the user's documents:
         logger.error(f"Error in send_message: {str(e)}")
         return jsonify({'error': 'An error occurred while processing your message'}), 500
 
-@chat_bp.route('/new_chat', methods=['POST'])
-@login_required
-def new_chat():
-    try:
-        # Get the current chat's documents
-        current_chat_id = request.form.get('current_chat_id')
-        if current_chat_id:
-            current_chat = Chat.query.get_or_404(current_chat_id)
-            if current_chat.user_id != current_user.id:
-                abort(403)
-            documents = current_chat.documents
-        else:
-            documents = []
-
-        # Create a new chat
-        new_chat = Chat(user_id=current_user.id, title="New Chat")
-        
-        # Associate the same documents with the new chat
-        new_chat.documents = documents
-
-        db.session.add(new_chat)
-        db.session.commit()
-
-        # Redirect to the new chat
-        return redirect(url_for('chat.chat_view', chat_id=new_chat.id))
-    except Exception as e:
-        logger.error(f"Error creating new chat: {str(e)}")
-        flash('An error occurred while creating a new chat. Please try again.', 'error')
-        return redirect(url_for('chat.chat_page'))
 
 @chat_bp.route('/upload_document', methods=['POST'])
 @login_required
@@ -540,4 +503,22 @@ def get_insurance_claim_documents():
             'filename': doc.filename,
             'uploaded_at': doc.uploaded_at.isoformat() if doc.uploaded_at else None
         } for doc in claim_documents]
+    })
+
+@chat_bp.route('/api/abbot/send_message', methods=['POST'])
+@login_required
+def send_abbot_message():
+    chat_id = request.json.get('chat_id')
+    content = request.json.get('content')
+    
+    context_manager = ContextManager(chat_id)
+    user_message = context_manager.add_message(content, 'user')
+    
+    # TODO: Process with AI and get response
+    ai_response = "This is a placeholder Abbot AI response."
+    ai_message = context_manager.add_message(ai_response, 'assistant')
+    
+    return jsonify({
+        'user_message': user_message.to_dict(),
+        'ai_message': ai_message.to_dict()
     })

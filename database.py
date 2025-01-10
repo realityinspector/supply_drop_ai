@@ -6,9 +6,14 @@ from sqlalchemy.engine import Engine
 from extensions import db
 from database_manager import DatabaseManager
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with reduced verbosity
+logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
+
+# Configure specific loggers
+logging.getLogger('werkzeug').setLevel(logging.WARNING)
+logging.getLogger('database_manager').setLevel(logging.WARNING)
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
 # Initialize database manager singleton
 db_manager = DatabaseManager()

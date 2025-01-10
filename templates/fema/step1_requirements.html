@@ -1,0 +1,282 @@
+{% extends "fema/base_fema.html" %}
+
+{% block fema_content %}
+<div class="bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-semibold mb-4">Step 1: Upload Requirements</h2>
+    
+    <div class="mb-6">
+        <p class="text-gray-600">
+            Please upload your FEMA requirements document. We accept PDF, DOCX, and TXT files.
+        </p>
+    </div>
+
+    <!-- Upload Form -->
+    <div id="uploadSection">
+        <form id="requirementsForm" class="space-y-4" enctype="multipart/form-data" action="{{ url_for('fema.upload_fema_requirements') }}" method="POST">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors" id="dropZone">
+                <input type="file" id="fileInput" name="file" class="hidden" accept=".pdf,.docx,.txt">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                    </div>
+                    <div class="text-gray-600">
+                        <label for="fileInput" class="cursor-pointer text-blue-500 hover:text-blue-600">
+                            Choose a file
+                        </label>
+                        or drag it here
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Supported formats: PDF, DOCX, TXT
+                    </div>
+                </div>
+            </div>
+
+            <div id="filePreview" class="hidden">
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <div>
+                                <div id="fileName" class="font-medium"></div>
+                                <div id="fileSize" class="text-sm text-gray-500"></div>
+                            </div>
+                        </div>
+                        <button type="button" id="removeFile" class="text-gray-400 hover:text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorMessage" class="hidden">
+                <div class="bg-red-50 border-l-4 border-red-500 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-red-700" id="errorText"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" id="submitBtn" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Process Requirements
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingSection" class="hidden">
+        <div class="flex flex-col items-center justify-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <p class="mt-4 text-gray-600">Processing your requirements document...</p>
+            <p class="text-sm text-gray-500 mt-2">This may take a few moments</p>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center text-green-700 mb-2">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="font-semibold">Requirements Processed Successfully</span>
+            </div>
+            <p class="text-green-600 text-sm">We've identified the following requirements from your document:</p>
+        </div>
+
+        <div id="requirementsList" class="space-y-4 mb-6">
+            <!-- Requirements will be populated here -->
+        </div>
+
+        <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+            <button type="button" id="startOver" class="text-gray-600 hover:text-gray-800 px-4 py-2">
+                Upload Different File
+            </button>
+            <button type="button" id="continueBtn" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                Continue to Form Upload
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('requirementsForm');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const filePreview = document.getElementById('filePreview');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSection = document.getElementById('loadingSection');
+    const resultsSection = document.getElementById('resultsSection');
+    const requirementsList = document.getElementById('requirementsList');
+    const errorMessage = document.getElementById('errorMessage');
+    const errorText = document.getElementById('errorText');
+    const uploadSection = document.getElementById('uploadSection');
+    let currentFormId = null;
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.classList.remove('hidden');
+        setTimeout(() => {
+            errorMessage.classList.add('hidden');
+        }, 5000);
+    }
+
+    function handleFile(file) {
+        if (!file) return;
+
+        const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+        if (!allowedTypes.includes(file.type)) {
+            showError('Please upload a PDF, DOCX, or TXT file.');
+            return;
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+            showError('File size must be less than 10MB.');
+            return;
+        }
+
+        fileName.textContent = file.name;
+        fileSize.textContent = formatFileSize(file.size);
+        filePreview.classList.remove('hidden');
+        dropZone.classList.add('hidden');
+        submitBtn.disabled = false;
+        errorMessage.classList.add('hidden');
+    }
+
+    // Drag and drop handlers
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-500');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-blue-500');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-500');
+        const file = e.dataTransfer.files[0];
+        fileInput.files = e.dataTransfer.files;
+        handleFile(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+        handleFile(fileInput.files[0]);
+    });
+
+    removeFile.addEventListener('click', () => {
+        fileInput.value = '';
+        filePreview.classList.add('hidden');
+        dropZone.classList.remove('hidden');
+        submitBtn.disabled = true;
+        errorMessage.classList.add('hidden');
+    });
+
+    document.getElementById('startOver').addEventListener('click', () => {
+        resultsSection.classList.add('hidden');
+        uploadSection.classList.remove('hidden');
+        fileInput.value = '';
+        filePreview.classList.add('hidden');
+        dropZone.classList.remove('hidden');
+        submitBtn.disabled = true;
+        errorMessage.classList.add('hidden');
+    });
+
+    document.getElementById('continueBtn').addEventListener('click', () => {
+        if (currentFormId) {
+            window.location.href = `/fema/upload-form?form_id=${currentFormId}`;
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log('Form submission started');
+
+        if (!fileInput.files.length) {
+            showError('Please select a file before continuing.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        console.log('File selected:', fileInput.files[0].name);
+        console.log('File type:', fileInput.files[0].type);
+        console.log('File size:', fileInput.files[0].size);
+
+        uploadSection.classList.add('hidden');
+        loadingSection.classList.remove('hidden');
+        errorMessage.classList.add('hidden');
+
+        try {
+            console.log('Sending request to:', form.action);
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to process requirements');
+            }
+
+            if (data.success) {
+                console.log('Processing successful, form ID:', data.form_id);
+                currentFormId = data.form_id;
+                requirementsList.innerHTML = data.requirements.map((req, index) => `
+                    <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                        <div class="flex-shrink-0 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3 mt-0.5">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-gray-700">${req}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                loadingSection.classList.add('hidden');
+                resultsSection.classList.remove('hidden');
+            } else {
+                throw new Error(data.error || 'Failed to process requirements');
+            }
+        } catch (error) {
+            console.error('Error during upload:', error);
+            loadingSection.classList.add('hidden');
+            uploadSection.classList.remove('hidden');
+            showError(error.message || 'An error occurred while processing your file.');
+        }
+    });
+});
+</script>
+{% endblock %} 

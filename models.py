@@ -158,3 +158,63 @@ chat_documents = db.Table('chat_documents',
     db.Column('chat_id', db.Integer, db.ForeignKey('chat.id'), primary_key=True),
     db.Column('document_id', db.Integer, db.ForeignKey('document.id'), primary_key=True)
 )
+
+class FEMAForm(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    form_type = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.String(20), default='in_progress')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('fema_forms', lazy=True))
+    requirements = db.relationship('FEMARequirement', backref='form', lazy=True)
+    analyses = db.relationship('FEMAAnalysis', backref='form', lazy=True)
+
+class FEMARequirement(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fema_form_id = db.Column(db.Integer, db.ForeignKey('fema_form.id'), nullable=False)
+    requirement_text = db.Column(db.Text, nullable=False)
+    is_met = db.Column(db.Boolean, default=False)
+
+class FEMAAnalysis(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fema_form_id = db.Column(db.Integer, db.ForeignKey('fema_form.id'), nullable=False)
+    analysis_type = db.Column(db.String(50), nullable=False)
+    content = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class AbbotConversation(db.Model):
+    __tablename__ = 'abbot_conversations'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_archived = db.Column(db.Boolean, default=False)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('abbot_conversations', lazy=True))
+    messages = db.relationship('AbbotMessage', backref='conversation', lazy=True, cascade='all, delete-orphan')
+
+class AbbotMessage(db.Model):
+    __tablename__ = 'abbot_messages'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('abbot_conversations.id'), nullable=False)
+    role = db.Column(db.String(50))  # 'user' or 'assistant'
+    content = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    token_count = db.Column(db.Integer)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'conversation_id': self.conversation_id,
+            'role': self.role,
+            'content': self.content,
+            'created_at': self.created_at.isoformat(),
+            'token_count': self.token_count
+        }

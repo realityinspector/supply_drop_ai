@@ -7,7 +7,7 @@ A Flask-based application for emergency preparedness, document management, and i
 - **Backend**: Flask 2.0+, Python 3.9+
 - **Database**: SQLAlchemy 1.4+, Alembic for migrations
 - **Authentication**: Auth0
-- **AI Integration**: OpenAI GPT-4
+- **AI Integration**: OpenAI gpt-4o
 - **Frontend**: HTML, CSS, JavaScript
 - **Payment Processing**: Stripe
 - **Email**: Mailgun
@@ -21,6 +21,7 @@ A Flask-based application for emergency preparedness, document management, and i
 ├── database.py          # Database configuration
 ├── document_processor.py # Document processing and analysis
 ├── extensions.py        # Flask extensions
+├── fema.py             # FEMA Forms Wizard functionality
 ├── models.py            # Database models
 ├── prompts.json         # AI system prompts configuration
 └── templates/           # Jinja2 templates
@@ -42,6 +43,7 @@ The application includes a sophisticated document processing system with the fol
    - Document summarization
    - Content analysis
    - Insurance requirement extraction
+   - FEMA requirement extraction
 
 3. **AI System Prompts**:
    - Centralized prompt management in `prompts.json`
@@ -77,6 +79,34 @@ The system provides four specialized analysis functions for insurance documents,
    - Tactical and strategic improvement recommendations
    - Organized by priority and impact
 
+### FEMA Forms Wizard
+
+The system provides specialized analysis for FEMA forms and requirements:
+
+1. **Requirements Analysis**
+   - Extracts requirements from FEMA documents
+   - Organizes requirements by priority
+   - Tracks requirement completion status
+   - Validates document compliance
+
+2. **Form Analysis**
+   - Analyzes FEMA forms against requirements
+   - Provides detailed compliance reports
+   - Identifies missing or incomplete sections
+   - Suggests improvements for compliance
+
+3. **Multi-step Wizard Interface**
+   - Step 1: Requirements Upload & Analysis
+   - Step 2: Form Upload & Validation
+   - Step 3: Detailed Analysis Results
+   - Progress tracking throughout process
+
+4. **Analysis Features**
+   - Form explanation and breakdown
+   - Enhancement suggestions
+   - Rejection risk analysis
+   - Language and clarity review
+
 ### Analysis Features
 
 - **Progressive Analysis**: Each analysis can build upon previous analyses, ensuring new and unique insights
@@ -92,6 +122,7 @@ The system provides four specialized analysis functions for insurance documents,
 - Document reuse capabilities
 - Analysis history preservation
 - Context-aware analysis suggestions
+- FEMA form progress tracking
 
 ## Database Features
 
@@ -104,6 +135,9 @@ The system provides four specialized analysis functions for insurance documents,
   - Message
   - InsuranceClaim
   - InsuranceRequirement
+  - FEMAForm
+  - FEMARequirement
+  - FEMAAnalysis
 
 ## Security Features
 

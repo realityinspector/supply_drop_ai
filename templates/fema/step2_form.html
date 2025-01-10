@@ -1,0 +1,187 @@
+{% extends "fema/base_fema.html" %}
+
+{% set progress = 66 %}
+
+{% block fema_content %}
+<div class="bg-white shadow-lg rounded-lg p-6">
+    <h2 class="text-2xl font-semibold mb-4">Step 2: Upload FEMA Form</h2>
+    
+    <div class="mb-6">
+        <p class="text-gray-600">
+            Please upload your completed FEMA form. We'll analyze it against the requirements and provide detailed feedback.
+        </p>
+    </div>
+
+    <div class="mb-8">
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-blue-700">
+                        Make sure your form is complete and all required fields are filled out before uploading.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <form id="formUpload" class="space-y-4">
+            <input type="hidden" id="formId" value="{{ request.args.get('form_id') }}">
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center" id="dropZone">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-center">
+                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                    </div>
+                    <div class="text-gray-600">
+                        <label for="fileInput" class="cursor-pointer text-blue-500 hover:text-blue-600">
+                            Choose a file
+                        </label>
+                        or drag it here
+                    </div>
+                    <input type="file" id="fileInput" class="hidden" accept=".pdf,.docx,.txt">
+                </div>
+            </div>
+
+            <div id="fileInfo" class="hidden">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span id="fileName" class="text-gray-600"></span>
+                    </div>
+                    <button type="button" id="removeFile" class="text-red-500 hover:text-red-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex justify-between space-x-4">
+                <a href="{{ url_for('fema.step1_requirements') }}" class="text-gray-600 hover:text-gray-800">
+                    ← Back to Requirements
+                </a>
+                <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Continue to Analysis
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="uploadProgress" class="hidden">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Processing your form...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const removeFile = document.getElementById('removeFile');
+        const form = document.getElementById('formUpload');
+        const uploadProgress = document.getElementById('uploadProgress');
+        const formId = document.getElementById('formId');
+
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('border-blue-500');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('border-blue-500');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFile(file);
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (file) {
+                fileName.textContent = file.name;
+                fileInfo.classList.remove('hidden');
+                dropZone.classList.add('hidden');
+            }
+        }
+
+        removeFile.addEventListener('click', function() {
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('form_id', formId.value);
+
+            // Show progress
+            form.classList.add('hidden');
+            uploadProgress.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/fema/upload-form', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.href = `/fema/step3_analysis?form_id=${formId.value}`;
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while uploading the form.');
+                
+                // Show form again
+                form.classList.remove('hidden');
+                uploadProgress.classList.add('hidden');
+            }
+        });
+    });
+</script>
+{% endblock %} 

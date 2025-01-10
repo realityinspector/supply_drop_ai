@@ -7,12 +7,10 @@
     <div class="px-4 py-6 sm:px-0">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-2xl font-bold text-gray-900">Your Chats</h1>
-            <form action="{{ url_for('chat.new_chat') }}" method="post">
-                <button type="submit" 
-                        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
-                    Start New Chat
-                </button>
-            </form>
+            <button id="newChat" 
+                    class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
+                Start New Abbot AI Chat
+            </button>
         </div>
 
         {% if chats %}
@@ -54,12 +52,10 @@
                 <h3 class="mt-2 text-sm font-medium text-gray-900">No chats yet</h3>
                 <p class="mt-1 text-sm text-gray-500">Get started by creating a new chat.</p>
                 <div class="mt-6">
-                    <form action="{{ url_for('chat.new_chat') }}" method="post">
-                        <button type="submit"
-                                class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            Start New Chat
-                        </button>
-                    </form>
+                    <button id="newChat"
+                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Start New Abbot AI Chat
+                    </button>
                 </div>
             </div>
         {% endif %}

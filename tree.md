@@ -4,14 +4,17 @@
 
 ```
 ├── README.md
+├── abbot.py
 ├── app.py
 ├── auth.py
 ├── chat.py
 ├── chatgptdocs.md
 ├── database.py
 ├── database_manager.py
+├── design_plan.md
 ├── document_processor.py
 ├── extensions.py
+├── fema.py
 ├── filters.py
 ├── main.py
 ├── migrations/
@@ -22,6 +25,7 @@
 ├── package-lock.json
 ├── package.json
 ├── profile.py
+├── prompt_abbot.json
 ├── prompts.json
 ├── static/
 │   └── [1 image files]
@@ -31,6 +35,7 @@
 │   │   ├── main.css
 │   ├── js/
 │   │   ├── chat.js
+│   │   ├── fema-workflow.js
 │   │   ├── insurance-upload.js
 │   │   ├── insurance-workflow.js
 │   │   ├── main.js
@@ -39,6 +44,8 @@
 ├── templates/
 │   ├── _footer.html
 │   ├── _nav.html
+│   ├── abbot/
+│   │   ├── chat.html
 │   ├── base.html
 │   ├── chat/
 │   │   ├── chat.html
@@ -51,6 +58,12 @@
 │   │   ├── list.html
 │   │   ├── view.html
 │   ├── documents.html
+│   ├── fema/
+│   │   ├── base_fema.html
+│   │   ├── step1_requirements.html
+│   │   ├── step2_form.html
+│   │   ├── step3_analysis.html
+│   │   ├── wizard.html
 │   ├── index.html
 │   ├── insurance/
 │   │   ├── base_insurance.html
