@@ -6,6 +6,9 @@ from flask import Flask, render_template
 import threading
 from extensions import init_extensions, db
 from database import test_connection, attempt_recovery, connection_state, CONNECTION_MONITOR
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from filters import from_json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -85,7 +88,7 @@ def heartbeat_worker(app):
         # Wait for next heartbeat interval
         time.sleep(check_interval)
 
-def create_app():
+def create_app(config=None):
     """Application factory function"""
     # Initialize Flask app
     app = Flask(__name__)
@@ -144,6 +147,9 @@ def create_app():
         # Start heartbeat mechanism immediately if in production
         if not app.debug and not app.config['_is_heartbeat_initialized']:
             init_heartbeat(app)
+
+    # Register custom filters
+    app.jinja_env.filters['from_json'] = from_json
 
     return app
 

@@ -1,57 +1,108 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-100">
+<html lang="en" class="h-full bg-gray-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supply Drop AI - {% block title %}{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/dist.css') }}">
-    {% block extra_css %}{% endblock %}
-</head>
-<body class="h-full flex flex-col bg-gray-100">
-    <nav class="bg-gray-800">
-        {% include '_nav.html' %}
-    </nav>
-
-    <div class="bg-yellow-50 border-b border-yellow-200">
-        <div class="max-w-7xl mx-auto py-3 px-3 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between flex-wrap">
-                <div class="w-0 flex-1 flex items-center">
-                    <span class="flex p-2">
-                        <svg class="h-6 w-6 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </span>
-                    <p class="ml-3 font-medium text-black">
-                        <span>THIS IS AN ALPHA PRODUCT FOR TESTING PURPOSES ONLY.</span>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="flex-grow">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} rounded-md p-4 mb-4 {% if category == 'error' %}bg-red-50 text-red-700{% elif category == 'success' %}bg-green-50 text-green-700{% else %}bg-blue-50 text-blue-700{% endif %}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-    </div>
-
-    <footer class="bg-gray-800 text-white py-4">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm">&copy; 2024 Supply Drop AI. All rights reserved.</p>
-        </div>
-    </footer>
-
+    <title>{% block title %}Supply Drop{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter var', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+                    },
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                h1: {
+                                    color: '#111827',
+                                    fontWeight: '600',
+                                    fontSize: '1.875rem',
+                                    marginBottom: '1rem',
+                                },
+                                h2: {
+                                    color: '#111827',
+                                    fontWeight: '500',
+                                    fontSize: '1.5rem',
+                                    marginBottom: '0.75rem',
+                                },
+                                h3: {
+                                    color: '#111827',
+                                    fontWeight: '500',
+                                    fontSize: '1.25rem',
+                                    marginBottom: '0.5rem',
+                                },
+                                p: {
+                                    color: '#374151',
+                                    marginBottom: '1rem',
+                                },
+                                ul: {
+                                    listStyleType: 'disc',
+                                    paddingLeft: '1.25rem',
+                                    marginBottom: '1rem',
+                                },
+                                li: {
+                                    color: '#374151',
+                                    marginBottom: '0.25rem',
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full">
+    {% include '_nav.html' %}
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="fixed top-16 right-4 z-50 space-y-4">
+                {% for category, message in messages %}
+                    <div class="rounded-md p-4 {% if category == 'error' %}bg-red-50 text-red-800{% else %}bg-green-50 text-green-800{% endif %} shadow-lg">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                {% if category == 'error' %}
+                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                {% else %}
+                                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                {% endif %}
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium">{{ message }}</p>
+                            </div>
+                            <div class="ml-auto pl-3">
+                                <div class="-mx-1.5 -my-1.5">
+                                    <button type="button" 
+                                            onclick="this.parentElement.parentElement.parentElement.parentElement.remove()"
+                                            class="inline-flex rounded-md p-1.5 {% if category == 'error' %}text-red-500 hover:bg-red-100{% else %}text-green-500 hover:bg-green-100{% endif %} focus:outline-none focus:ring-2 focus:ring-offset-2 {% if category == 'error' %}focus:ring-red-500{% else %}focus:ring-green-500{% endif %}">
+                                        <span class="sr-only">Dismiss</span>
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+    {% include '_footer.html' %}
+    
     {% block extra_js %}{% endblock %}
+    
 </body>
 </html>

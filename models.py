@@ -82,7 +82,7 @@ class Chat(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     title = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    messages = db.relationship('Message', backref='chat', lazy=True)
+    messages = db.relationship('Message', back_populates='chat', lazy=True)
 
     def __init__(self, user_id, title=None):
         self.user_id = user_id

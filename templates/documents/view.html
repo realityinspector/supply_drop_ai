@@ -1,75 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}{{ document.filename }}{% endblock %}
-
 {% block content %}
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-6 sm:px-0">
-        <div class="bg-white rounded-lg shadow px-5 py-6 sm:px-6">
-            <div class="border-b border-gray-200 pb-5">
-                <h1 class="text-2xl font-bold text-gray-900">
-                    {{ document.filename }}
-                </h1>
-                <div class="mt-2 flex flex-col sm:flex-row sm:flex-wrap sm:space-x-6">
-                    <div class="mt-2 flex items-center text-sm text-gray-500">
-                        <span class="mr-2">Type:</span>
-                        <span class="font-medium">{{ document.processing_type }}</span>
-                    </div>
-                    <div class="mt-2 flex items-center text-sm text-gray-500">
-                        <span class="mr-2">Status:</span>
-                        <span class="font-medium">{{ document.processing_status }}</span>
-                    </div>
-                    <div class="mt-2 flex items-center text-sm text-gray-500">
-                        <span class="mr-2">Uploaded:</span>
-                        <span class="font-medium">{{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-6">
-                <h2 class="text-lg font-medium text-gray-900">Document Content</h2>
-                <div class="mt-3 bg-gray-50 p-4 rounded-md">
-                    <pre class="whitespace-pre-wrap text-sm text-gray-700">{{ document.content }}</pre>
-                </div>
-            </div>
-
-            {% if document.processed_content %}
-            <div class="mt-6">
-                <h2 class="text-lg font-medium text-gray-900">Processed Results</h2>
-                <div class="mt-3 bg-gray-50 p-4 rounded-md">
-                    {% if document.processing_type == 'insurance_requirements' %}
-                        <div class="space-y-4">
-                            {% for req in document.processed_content.requirements %}
-                            <div class="border-l-4 border-blue-500 pl-4">
-                                <p class="font-medium">{{ req.requirement_text }}</p>
-                                <div class="mt-1 text-sm text-gray-600">
-                                    <p>Category: {{ req.category }}</p>
-                                    <p>Priority: {{ req.priority }}</p>
-                                    {% if req.deadline %}
-                                    <p>Deadline: {{ req.deadline }}</p>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <pre class="whitespace-pre-wrap text-sm text-gray-700">{{ document.processed_content | tojson(indent=2) }}</pre>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
-
-            <div class="mt-6 flex justify-between">
-                <a href="{{ url_for('chat.documents') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Back to Documents
-                </a>
-                <a href="{{ url_for('chat.new_chat') }}" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Start Chat About This Document
-                </a>
-            </div>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">{{ document.filename }}</h1>
+    <p>Uploaded on: {{ document.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p>Type: {{ document.processing_type }}</p>
+    <p>Status: {{ document.processing_status }}</p>
+    
+    {% if document.processing_status == 'completed' %}
+        <div class="mt-4">
+            <h2 class="text-xl font-semibold mb-2">Document Content:</h2>
+            <pre class="bg-gray-100 p-4 rounded">{{ document.content }}</pre>
         </div>
+    {% endif %}
+    
+    <div class="mt-6">
+        <a href="{{ url_for('chat.documents') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Back to Documents
+        </a>
     </div>
 </div>
 {% endblock %} 
