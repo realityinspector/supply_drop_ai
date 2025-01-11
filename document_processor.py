@@ -158,8 +158,18 @@ def process_insurance_requirements(content: str) -> Dict[str, Any]:
 def analyze_insurance_claim(claim_content: str, requirement_content: str, analysis_type: str, previous_messages: List[Dict[str, str]] = None) -> Dict[str, Any]:
     """Analyze insurance claim against requirements with specified analysis type."""
     try:
-        if analysis_type not in PROMPTS["insurance_analysis"]:
-            raise ValueError(f"Invalid analysis type: {analysis_type}")
+        # Map frontend analysis types to backend types
+        analysis_type_map = {
+            'explain': 'explain',
+            'enhance': 'enhance',
+            'mock_rejection': 'mock_rejection',
+            'language': 'language'
+        }
+        
+        backend_analysis_type = analysis_type_map.get(analysis_type, analysis_type)
+        
+        if backend_analysis_type not in PROMPTS["insurance_analysis"]:
+            raise ValueError(f"Invalid analysis type: {backend_analysis_type}")
 
         # Build context from previous messages if they exist
         context_prompt = ""
@@ -179,8 +189,8 @@ def analyze_insurance_claim(claim_content: str, requirement_content: str, analys
 
         messages: List[ChatCompletionMessageParam] = [
             ChatCompletionSystemMessageParam(
-                role=PROMPTS["insurance_analysis"][analysis_type]["role"],
-                content=f"""{PROMPTS["insurance_analysis"][analysis_type]["content"]}
+                role=PROMPTS["insurance_analysis"][backend_analysis_type]["role"],
+                content=f"""{PROMPTS["insurance_analysis"][backend_analysis_type]["content"]}
 {context_prompt}
 Provide your response as exactly 25 NEW items, organized into priority sections but maintaining a sequential numbering from 1-25. Format as follows:
 
@@ -228,7 +238,8 @@ IMPORTANT:
 
         response = client.chat.completions.create(
             model="gpt-4o",
-            messages=messages
+            messages=messages,
+            response_format={"type": "json_object"}
         )
         
         if response.choices and response.choices[0].message and response.choices[0].message.content:
