@@ -270,6 +270,23 @@ def analyze_documents():
         if not analysis_type:
             return jsonify({'error': 'Analysis type is required'}), 400
 
+        # Map frontend analysis types to backend types
+        analysis_type_map = {
+            'explain': 'explain',
+            'enhance': 'enhance',
+            'mock_rejection': 'mock_rejection',
+            'language': 'language'
+        }
+        
+        backend_analysis_type = analysis_type_map.get(analysis_type)
+        if not backend_analysis_type:
+            return jsonify({'error': f'Invalid analysis type: {analysis_type}'}), 400
+
+        # Log the analysis request
+        current_app.logger.info(f"Starting analysis - Type: {backend_analysis_type}")
+        current_app.logger.info(f"Requirements Doc ID: {workflow_state['requirements_doc_id']}")
+        current_app.logger.info(f"Claim Doc ID: {workflow_state['claim_doc_id']}")
+
         # Get previous chat ID if this is a follow-up analysis
         previous_chat_id = request.form.get('previous_chat_id')
         previous_messages = []
@@ -277,41 +294,33 @@ def analyze_documents():
             previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
             previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
 
-        chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {analysis_type}")
+        chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {backend_analysis_type}")
         db.session.add(chat)
 
         claim_doc = Document.query.get_or_404(workflow_state['claim_doc_id'])
         req_doc = Document.query.get_or_404(workflow_state['requirements_doc_id'])
 
+        current_app.logger.info(f"Retrieved documents - Claim: {claim_doc.filename}, Requirements: {req_doc.filename}")
+
         try:
             analysis_result = analyze_insurance_claim(
                 claim_doc.content,
                 req_doc.content,
-                analysis_type,
+                backend_analysis_type,
                 previous_messages if previous_messages else None
             )
-            print(f"Analysis result received")
+            current_app.logger.info("Analysis completed successfully")
+            current_app.logger.debug(f"Analysis result: {json.dumps(analysis_result, indent=2)}")
         except Exception as e:
-            print(f"Error in analyze_insurance_claim: {str(e)}")
-            # Check if the error message contains a JSON string
-            error_str = str(e)
-            if "Raw content:" in error_str:
-                try:
-                    # Extract the JSON part from the error message
-                    json_str = error_str.split("Raw content:", 1)[1].strip()
-                    analysis_result = json.loads(json_str)
-                    print("Successfully extracted JSON from error message")
-                except json.JSONDecodeError as je:
-                    print(f"Failed to parse JSON from error: {str(je)}")
-                    return jsonify({'error': f'Failed to parse analysis result: {str(je)}'}), 500
-            else:
-                return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+            current_app.logger.error(f"Error in analyze_insurance_claim: {str(e)}")
+            db.session.rollback()
+            return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
         claim = InsuranceClaim(
             user_id=current_user.id,
             requirement_id=workflow_state['requirements_doc_id'],
             document_id=workflow_state['claim_doc_id'],
-            analysis_type=analysis_type,
+            analysis_type=backend_analysis_type,
             analysis_result=analysis_result
         )
         db.session.add(claim)
@@ -323,7 +332,13 @@ def analyze_documents():
         )
         db.session.add(message)
         
-        db.session.commit()
+        try:
+            db.session.commit()
+            current_app.logger.info("Saved analysis results to database")
+        except SQLAlchemyError as e:
+            current_app.logger.error(f"Database error: {str(e)}")
+            db.session.rollback()
+            return jsonify({'error': 'Failed to save analysis results'}), 500
 
         # Clear workflow state after analysis
         session.pop('workflow_state', None)
@@ -335,7 +350,8 @@ def analyze_documents():
         })
 
     except Exception as e:
-        print(f"Error in analyze_documents: {str(e)}")
+        current_app.logger.error(f"Error in analyze_documents: {str(e)}")
+        db.session.rollback()  # Rollback any pending changes
         return jsonify({'error': f'Error during analysis: {str(e)}'}), 500
 
 @chat_bp.route('/chat')

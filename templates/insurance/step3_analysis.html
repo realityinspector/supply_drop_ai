@@ -105,16 +105,14 @@ async function analyzeDocuments(analysisType) {
         
         // Add CSRF token
         const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        formData.append('csrf_token', csrfToken);
         
         const response = await fetch('{{ url_for("chat.analyze_documents") }}', {
             method: 'POST',
-            body: formData,
             headers: {
-                'Accept': 'application/json',
                 'X-CSRF-TOKEN': csrfToken
             },
-            redirect: 'follow'
+            body: formData,
+            credentials: 'same-origin'
         });
 
         // Log response details for debugging
