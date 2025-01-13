@@ -13,7 +13,12 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import SQLAlchemyError
 from abbot import ContextManager, get_system_prompt
-from celery import shared_task
+import traceback
+try:
+    import PyPDF2
+    PDF_SUPPORT = True
+except ImportError:
+    PDF_SUPPORT = False
 
 # Setup logging with more detailed format
 logging.basicConfig(
@@ -45,25 +50,21 @@ def pretty_json(value):
 def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
 
-def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md', 'json'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@shared_task
-def process_document_task(document_id):
+def extract_text_from_pdf(file_path):
+    """Extract text from a PDF file."""
+    if not PDF_SUPPORT:
+        return f"PDF text extraction not available. File stored at: {file_path}"
+    
     try:
-        document = Document.query.get(document_id)
-        if not document:
-            return
-
-        processed_result = process_document(document.content, 'insurance_requirements')
-        document.processed_content = processed_result
-        document.processing_status = 'completed'
-        db.session.commit()
+        text = []
+        with open(file_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            for page in pdf_reader.pages:
+                text.append(page.extract_text())
+        return '\n'.join(text)
     except Exception as e:
-        current_app.logger.error(f"Error processing document {document_id}: {str(e)}")
-        document.processing_status = 'failed'
-        db.session.commit()
+        current_app.logger.error(f"Error extracting text from PDF: {str(e)}")
+        return f"Error extracting PDF text. File stored at: {file_path}"
 
 @chat_bp.route('/')
 def index():
@@ -162,10 +163,26 @@ def reuse_document():
 @login_required
 def upload_requirements():
     try:
+        current_app.logger.info("Entering upload_requirements function")
+        current_app.logger.info(f"UPLOAD_FOLDER configuration: {current_app.config.get('UPLOAD_FOLDER')}")
+        
+        # Log request information
+        current_app.logger.info(f"Request method: {request.method}")
+        current_app.logger.info(f"Content type: {request.content_type}")
+        current_app.logger.info(f"Request headers: {dict(request.headers)}")
+        
+        # Log CSRF token information for debugging
+        csrf_token = request.form.get('csrf_token')
+        csrf_header = request.headers.get('X-CSRFToken')
+        current_app.logger.info(f"CSRF token in form: {bool(csrf_token)}")
+        current_app.logger.info(f"CSRF token in header: {bool(csrf_header)}")
+        
         reuse_doc_id = request.form.get('reuse_document_id')
         if reuse_doc_id:
-            document = Document.query.get_or_404(reuse_doc_id)
-            if document.user_id != current_user.id:
+            current_app.logger.info(f"Attempting to reuse document with ID: {reuse_doc_id}")
+            document = Document.query.get(reuse_doc_id)
+            if not document or document.user_id != current_user.id:
+                current_app.logger.warning(f"Unauthorized access to document {reuse_doc_id} by user {current_user.id}")
                 return jsonify({'error': 'Unauthorized access to document'}), 403
             
             # Update workflow state in session
@@ -173,112 +190,248 @@ def upload_requirements():
             workflow_state['requirements_doc_id'] = document.id
             session['workflow_state'] = workflow_state
             
+            current_app.logger.info(f"Successfully reused document: {document.filename}")
             return jsonify({
                 'success': True,
                 'document_id': document.id,
                 'filename': document.filename
             })
         
+        current_app.logger.info("Checking for file in request")
+        current_app.logger.info(f"Request files: {list(request.files.keys())}")
+        current_app.logger.info(f"Request form: {list(request.form.keys())}")
+        
         if 'file' not in request.files:
+            current_app.logger.warning("No file provided in request")
             return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
         if not file or not file.filename:
+            current_app.logger.warning("No file selected")
             return jsonify({'error': 'No file selected'}), 400
+        
+        current_app.logger.info(f"File received: {file.filename}")
         
         # Validate file
         if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type. Supported formats: PDF, DOCX, TXT, MD, JSON'}), 400
+            current_app.logger.warning(f"Invalid file type: {file.filename}")
+            return jsonify({'error': 'Invalid file type'}), 400
+        
+        # Ensure upload directory exists
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            current_app.logger.info(f"Creating upload directory: {upload_folder}")
+            os.makedirs(upload_folder)
+        
+        # Save file and create document record
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_folder, filename)
+        current_app.logger.info(f"Saving file to: {file_path}")
         
         try:
-            # Process the file content
-            processed_result = process_document(file, 'text')  # Just extract text for now
+            file.save(file_path)
+            current_app.logger.info("File saved successfully")
+        except Exception as e:
+            current_app.logger.error(f"Error saving file: {str(e)}")
+            return jsonify({'error': f'Failed to save file: {str(e)}'}), 500
+        
+        try:
+            # Process the file based on its type
+            if filename.lower().endswith('.pdf'):
+                content = extract_text_from_pdf(file_path)
+            else:
+                # For text files, read the content
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    # If UTF-8 fails, try reading as binary
+                    with open(file_path, 'rb') as f:
+                        content = f.read().decode('utf-8', errors='ignore')
             
             document = Document(
                 user_id=current_user.id,
-                filename=file.filename,
-                content=processed_result.get('raw_text', ''),
-                processing_type='insurance_requirements',
-                processed_content=processed_result,
-                processing_status='completed'
+                filename=filename,
+                file_path=file_path,
+                content=content,
+                processing_type='requirements'
             )
             db.session.add(document)
             db.session.commit()
-            
-            # Update workflow state in session
+            current_app.logger.info("Document record created in database")
+        except SQLAlchemyError as e:
+            current_app.logger.error(f"Database error: {str(e)}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return jsonify({'error': f'Database error: {str(e)}'}), 500
+        
+        # Update workflow state in session
+        try:
             workflow_state = session.get('workflow_state', {})
             workflow_state['requirements_doc_id'] = document.id
             session['workflow_state'] = workflow_state
-            
-            return jsonify({
-                'success': True,
-                'document_id': document.id,
-                'filename': document.filename
-            })
-            
+            current_app.logger.info("Workflow state updated")
         except Exception as e:
-            current_app.logger.error(f"Error processing file: {str(e)}")
-            return jsonify({'error': 'Failed to process document. Please try again.'}), 500
-            
-    except Exception as e:
-        current_app.logger.error(f"Error uploading file: {str(e)}")
+            current_app.logger.error(f"Session error: {str(e)}")
+            return jsonify({'error': f'Session error: {str(e)}'}), 500
+        
+        current_app.logger.info(f"Successfully uploaded requirements document: {filename}")
+        return jsonify({
+            'success': True,
+            'document_id': document.id,
+            'filename': filename
+        })
+        
+    except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        current_app.logger.error(f"Database error while uploading file: {str(e)}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except IOError as e:
+        current_app.logger.error(f"I/O error while saving file: {str(e)}")
+        return jsonify({'error': f'I/O error: {str(e)}'}), 500
+    except Exception as e:
+        current_app.logger.error(f"Unexpected error while uploading file: {str(e)}")
+        current_app.logger.error(f"Error type: {type(e)}")
+        current_app.logger.error(f"Error traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+
+def allowed_file(filename):
+    """Check if a filename has an allowed extension"""
+    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md', 'json'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @chat_bp.route('/insurance/upload-claim', methods=['POST'])
 @login_required
 def upload_claim():
     try:
+        current_app.logger.info("Entering upload_claim function")
+        current_app.logger.info(f"UPLOAD_FOLDER configuration: {current_app.config.get('UPLOAD_FOLDER')}")
+        
+        # Log request information
+        current_app.logger.info(f"Request method: {request.method}")
+        current_app.logger.info(f"Content type: {request.content_type}")
+        current_app.logger.info(f"Request headers: {dict(request.headers)}")
+        
+        # Log CSRF token information for debugging
+        csrf_token = request.form.get('csrf_token')
+        csrf_header = request.headers.get('X-CSRFToken')
+        current_app.logger.info(f"CSRF token in form: {bool(csrf_token)}")
+        current_app.logger.info(f"CSRF token in header: {bool(csrf_header)}")
+        
         workflow_state = session.get('workflow_state', {})
         if not workflow_state.get('requirements_doc_id'):
-            flash('Please upload requirements document first', 'error')
-            return redirect(url_for('chat.insurance_wizard'))
+            current_app.logger.warning("Attempt to upload claim without requirements document")
+            return jsonify({'error': 'Please upload requirements document first'}), 400
 
         reuse_doc_id = request.form.get('reuse_document_id')
         if reuse_doc_id:
-            document = Document.query.get_or_404(reuse_doc_id)
-            if document.user_id != current_user.id:
-                flash('Unauthorized access to document', 'error')
-                return redirect(url_for('chat.insurance_wizard'))
+            current_app.logger.info(f"Attempting to reuse document with ID: {reuse_doc_id}")
+            document = Document.query.get(reuse_doc_id)
+            if not document or document.user_id != current_user.id:
+                current_app.logger.warning(f"Unauthorized access to document {reuse_doc_id} by user {current_user.id}")
+                return jsonify({'error': 'Unauthorized access to document'}), 403
             
             workflow_state['claim_doc_id'] = document.id
             session['workflow_state'] = workflow_state
-            flash('Successfully reused existing document', 'success')
-            return redirect(url_for('chat.insurance_wizard', step=3))
+            current_app.logger.info(f"Successfully reused document: {document.filename}")
+            return jsonify({
+                'success': True,
+                'document_id': document.id,
+                'filename': document.filename
+            })
+        
+        current_app.logger.info("Checking for file in request")
+        current_app.logger.info(f"Request files: {list(request.files.keys())}")
+        current_app.logger.info(f"Request form: {list(request.form.keys())}")
         
         if 'file' not in request.files:
-            flash('No file provided', 'error')
-            return redirect(url_for('chat.insurance_wizard'))
+            current_app.logger.warning("No file provided in request")
+            return jsonify({'error': 'No file provided'}), 400
         
         file = request.files['file']
-        if file.filename == '':
-            flash('No file selected', 'error')
-            return redirect(url_for('chat.insurance_wizard'))
+        if not file or not file.filename:
+            current_app.logger.warning("No file selected")
+            return jsonify({'error': 'No file selected'}), 400
 
-        document = Document(
-            user_id=current_user.id,
-            filename=file.filename,
-            content='',
-            processing_type='insurance_claim'
-        )
-        db.session.add(document)
-        db.session.commit()
-
-        processed_result = process_document(file, 'text')
-        document.content = processed_result.get('raw_text', '')
-        document.processed_content = processed_result
-        document.processing_status = 'completed'
-
-        workflow_state['claim_doc_id'] = document.id
-        session['workflow_state'] = workflow_state
+        current_app.logger.info(f"File received: {file.filename}")
         
-        db.session.commit()
-        flash('Claim document processed successfully', 'success')
-        return redirect(url_for('chat.insurance_wizard', step=3))
+        # Validate file
+        if not allowed_file(file.filename):
+            current_app.logger.warning(f"Invalid file type: {file.filename}")
+            return jsonify({'error': 'Invalid file type'}), 400
 
+        # Ensure upload directory exists
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            current_app.logger.info(f"Creating upload directory: {upload_folder}")
+            os.makedirs(upload_folder)
+        
+        # Save file and create document record
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_folder, filename)
+        current_app.logger.info(f"Saving file to: {file_path}")
+        
+        try:
+            file.save(file_path)
+            current_app.logger.info("File saved successfully")
+        except Exception as e:
+            current_app.logger.error(f"Error saving file: {str(e)}")
+            return jsonify({'error': f'Failed to save file: {str(e)}'}), 500
+        
+        try:
+            # Process the file based on its type
+            if filename.lower().endswith('.pdf'):
+                content = extract_text_from_pdf(file_path)
+            else:
+                # For text files, read the content
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                except UnicodeDecodeError:
+                    # If UTF-8 fails, try reading as binary
+                    with open(file_path, 'rb') as f:
+                        content = f.read().decode('utf-8', errors='ignore')
+            
+            document = Document(
+                user_id=current_user.id,
+                filename=filename,
+                file_path=file_path,
+                content=content,
+                processing_type='insurance_claim'
+            )
+            db.session.add(document)
+            db.session.commit()
+            current_app.logger.info("Document record created in database")
+            
+            workflow_state['claim_doc_id'] = document.id
+            session['workflow_state'] = workflow_state
+            current_app.logger.info("Workflow state updated")
+            
+            return jsonify({
+                'success': True,
+                'document_id': document.id,
+                'filename': filename
+            })
+            
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error: {str(e)}")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            return jsonify({'error': f'Database error: {str(e)}'}), 500
+        
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        current_app.logger.error(f"Database error while uploading file: {str(e)}")
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+    except IOError as e:
+        current_app.logger.error(f"I/O error while saving file: {str(e)}")
+        return jsonify({'error': f'I/O error: {str(e)}'}), 500
     except Exception as e:
-        flash(str(e), 'error')
-        return redirect(url_for('chat.insurance_wizard'))
+        current_app.logger.error(f"Unexpected error while uploading file: {str(e)}")
+        current_app.logger.error(f"Error type: {type(e)}")
+        current_app.logger.error(f"Error traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
 
 @chat_bp.route('/insurance/analyze', methods=['POST'])
 @login_required
@@ -313,13 +466,8 @@ def analyze_documents():
         previous_chat_id = request.form.get('previous_chat_id')
         previous_messages = []
         if previous_chat_id:
-            try:
-                previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
-                previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
-                current_app.logger.info(f"Retrieved {len(previous_messages)} previous messages")
-            except Exception as e:
-                current_app.logger.error(f"Error retrieving previous messages: {str(e)}")
-                previous_messages = []
+            previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
+            previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
 
         chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {backend_analysis_type}")
         db.session.add(chat)
@@ -343,20 +491,6 @@ def analyze_documents():
             db.session.rollback()
             return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
-        # Ensure analysis_result is JSON serializable
-        try:
-            json_content = json.dumps(analysis_result)
-            message = Message(
-                chat_id=chat.id,
-                content=json_content,
-                role='assistant'
-            )
-            db.session.add(message)
-        except Exception as e:
-            current_app.logger.error(f"Error serializing analysis result: {str(e)}")
-            db.session.rollback()
-            return jsonify({'error': 'Failed to process analysis results'}), 500
-
         claim = InsuranceClaim(
             user_id=current_user.id,
             requirement_id=workflow_state['requirements_doc_id'],
@@ -365,6 +499,13 @@ def analyze_documents():
             analysis_result=analysis_result
         )
         db.session.add(claim)
+
+        message = Message(
+            chat_id=chat.id,
+            content=json.dumps(analysis_result, indent=2),
+            role='assistant'
+        )
+        db.session.add(message)
         
         try:
             db.session.commit()
@@ -374,14 +515,13 @@ def analyze_documents():
             db.session.rollback()
             return jsonify({'error': 'Failed to save analysis results'}), 500
 
-        # Don't clear workflow state to allow for follow-up analyses
-        # session.pop('workflow_state', None)
+        # Clear workflow state after analysis
+        session.pop('workflow_state', None)
 
         return jsonify({
             'success': True,
             'chat_id': chat.id,
-            'message': 'Analysis completed successfully',
-            'analysis_result': analysis_result
+            'message': 'Analysis completed successfully'
         })
 
     except Exception as e:
@@ -584,16 +724,4 @@ def send_abbot_message():
     return jsonify({
         'user_message': user_message.to_dict(),
         'ai_message': ai_message.to_dict()
-    })
-
-@chat_bp.route('/insurance/document-status/<int:document_id>')
-@login_required
-def document_status(document_id):
-    document = Document.query.get_or_404(document_id)
-    if document.user_id != current_user.id:
-        abort(403)
-    
-    return jsonify({
-        'status': document.processing_status,
-        'filename': document.filename
     })

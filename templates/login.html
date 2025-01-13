@@ -9,31 +9,18 @@
         </div>
         <div class="bg-white py-8 px-4 shadow-lg rounded-lg sm:px-10">
             <form method="POST" class="space-y-6">
-                {{ form.csrf_token }}
                 <div>
-                    {{ form.username.label(class="block text-sm font-medium text-gray-700") }}
+                    <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
                     <div class="mt-1">
-                        {{ form.username(class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
-                        {% if form.username.errors %}
-                            <div class="text-red-500 text-sm mt-1">
-                                {% for error in form.username.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="text" id="username" name="username" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
                 <div>
-                    {{ form.password.label(class="block text-sm font-medium text-gray-700") }}
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
                     <div class="mt-1">
-                        {{ form.password(class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500") }}
-                        {% if form.password.errors %}
-                            <div class="text-red-500 text-sm mt-1">
-                                {% for error in form.password.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        <input type="password" id="password" name="password" required 
+                               class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
                 <div>

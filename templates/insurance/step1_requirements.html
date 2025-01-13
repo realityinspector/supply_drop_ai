@@ -2,6 +2,9 @@
 
 {% block insurance_content %}
 <div class="space-y-6">
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <h3 class="text-xl font-semibold">Step 1: Upload Insurance Requirements and Policy</h3>
     
     <p class="text-gray-600">Please upload your insurance requirements document or select a previously uploaded document.</p>
@@ -30,13 +33,12 @@
     <div class="mt-8">
         <h4 class="font-medium mb-2">Upload New Document</h4>
         <div class="border rounded p-4">
-            <form id="requirementsForm" action="{{ url_for('chat.upload_requirements') }}" method="post" enctype="multipart/form-data">
+            <form id="requirementsUploadForm" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div>
                     <input type="file" name="file" id="file" accept=".pdf,.docx,.txt,.md,.json"
                            class="mb-4">
                     <button type="submit" 
-                            id="uploadButton"
                             class="bg-indigo-400 text-white px-4 py-2 rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                         Upload Document
                     </button>
@@ -58,32 +60,11 @@
     <div id="requirementsStatus" class="status-message"></div>
 </div>
 
+<script src="{{ url_for('static', filename='js/insurance-workflow.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const existingDocSelect = document.getElementById('existingDocumentSelect');
     const reuseDocBtn = document.getElementById('reuseDocumentBtn');
-    const requirementsForm = document.getElementById('requirementsForm');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const statusElement = document.getElementById('requirementsStatus');
-    const uploadButton = document.getElementById('uploadButton');
-    
-    function showLoading(message = 'Processing document...') {
-        loadingOverlay.classList.remove('hidden');
-        document.getElementById('loadingText').textContent = message;
-        uploadButton.disabled = true;
-        if (reuseDocBtn) reuseDocBtn.disabled = true;
-    }
-    
-    function hideLoading() {
-        loadingOverlay.classList.add('hidden');
-        uploadButton.disabled = false;
-        if (reuseDocBtn) reuseDocBtn.disabled = !existingDocSelect.value;
-    }
-    
-    function showError(message) {
-        statusElement.textContent = message;
-        statusElement.className = 'status-message text-red-500 mt-4';
-    }
     
     if (existingDocSelect && reuseDocBtn) {
         // Initial state
@@ -95,72 +76,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Add click event handler for the button
-        reuseDocBtn.addEventListener('click', async function(e) {
+        reuseDocBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            if (!existingDocSelect.value) return;
-
-            try {
-                showLoading('Reusing selected document...');
-                const formData = new FormData();
-                formData.append('reuse_document_id', existingDocSelect.value);
-                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
-
-                const response = await fetch('{{ url_for("chat.upload_requirements") }}', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to reuse document');
-                }
-
-                window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
-            } catch (error) {
-                console.error('Error:', error);
-                showError(error.message);
-            } finally {
-                hideLoading();
+            if (existingDocSelect.value) {
+                DocumentManager.reuseDocument(existingDocSelect.value);
             }
         });
     }
-
-    // Handle form submission for new file upload
-    requirementsForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const fileInput = document.getElementById('file');
-
-        if (!fileInput.files[0]) {
-            showError('Please select a file');
-            return;
-        }
-
-        try {
-            showLoading();
-            statusElement.textContent = 'Uploading...';
-            statusElement.className = 'status-message text-blue-500 mt-4';
-
-            const response = await fetch(this.action, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || 'Upload failed');
-            }
-
-            window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
-        } catch (error) {
-            console.error('Error:', error);
-            showError(error.message);
-        } finally {
-            hideLoading();
-        }
-    });
 });
 </script>
 {% endblock %}

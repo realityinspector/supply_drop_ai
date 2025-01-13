@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from extensions import db
 from models import User
-from forms import SignupForm, LoginForm
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,11 +10,10 @@ def signup():
     if current_user.is_authenticated:
         return redirect(url_for('chat.index'))
     
-    form = SignupForm()
-    if form.validate_on_submit():
-        username = form.username.data
-        email = form.email.data
-        password = form.password.data
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
         
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
@@ -33,17 +31,16 @@ def signup():
         flash('Registration successful!', 'success')
         return redirect(url_for('auth.login'))
     
-    return render_template('signup.html', form=form)
+    return render_template('signup.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('chat.index'))
     
-    form = LoginForm()
-    if form.validate_on_submit():
-        username = form.username.data
-        password = form.password.data
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
@@ -52,7 +49,7 @@ def login():
         
         flash('Invalid username or password', 'danger')
     
-    return render_template('login.html', form=form)
+    return render_template('login.html')
 
 @auth_bp.route('/logout')
 @login_required

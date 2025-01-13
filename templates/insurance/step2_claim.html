@@ -2,6 +2,9 @@
 
 {% block insurance_content %}
 <div class="space-y-6">
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -50,7 +53,8 @@
     {% endif %}
 
     <!-- Upload New Document Form -->
-    <form id="claimForm" class="space-y-4" action="{{ url_for('chat.upload_claim') }}" method="POST" enctype="multipart/form-data">
+    <form id="claimUploadForm" class="space-y-4" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
             <label class="block text-gray-700 font-medium mb-2">Upload New Claim Document</label>
             <div class="relative">
@@ -94,62 +98,22 @@
     </form>
 </div>
 
+<script src="{{ url_for('static', filename='js/insurance-workflow.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const select = document.getElementById('existingDocumentSelect');
     const reuseBtn = document.getElementById('reuseDocumentBtn');
     
-    if (select) {
+    if (select && reuseBtn) {
         select.addEventListener('change', function() {
             reuseBtn.disabled = !this.value;
         });
 
         reuseBtn.addEventListener('click', function() {
             const docId = select.value;
-            if (!docId) return;
-
-            const formData = new FormData();
-            formData.append('reuse_document_id', docId);
-            
-            // Add CSRF token
-            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            formData.append('csrf_token', csrfToken);
-
-            // Show loading state
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            loadingOverlay.classList.remove('hidden');
-            loadingOverlay.style.opacity = '1';
-
-            fetch('{{ url_for("chat.upload_claim") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: formData,
-                redirect: 'follow'
-            })
-            .then(response => {
-                console.log('Response status:', response.status);
-                if (response.redirected) {
-                    window.location.href = response.url;
-                    return;
-                }
-                
-                if (response.ok) {
-                    window.location.href = '{{ url_for("chat.insurance_wizard", step=3) }}';
-                } else {
-                    return response.text().then(text => {
-                        console.error('Error:', text);
-                        throw new Error(text);
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                loadingOverlay.style.opacity = '0';
-                setTimeout(() => loadingOverlay.classList.add('hidden'), 300);
-                alert('Failed to reuse document: ' + error.message);
-            });
+            if (docId) {
+                DocumentManager.reuseDocument(docId);
+            }
         });
     }
 
