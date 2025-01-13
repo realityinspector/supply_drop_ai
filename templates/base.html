@@ -21,6 +21,32 @@
                                     color: '#111827',
                                     fontWeight: '600',
                                     fontSize: '1.875rem',
+                                    marginBottom: '1rem',
+                                },
+                                h2: {
+                                    color: '#111827',
+                                    fontWeight: '500',
+                                    fontSize: '1.5rem',
+                                    marginBottom: '0.75rem',
+                                },
+                                h3: {
+                                    color: '#111827',
+                                    fontWeight: '500',
+                                    fontSize: '1.25rem',
+                                    marginBottom: '0.5rem',
+                                },
+                                p: {
+                                    color: '#374151',
+                                    marginBottom: '1rem',
+                                },
+                                ul: {
+                                    listStyleType: 'disc',
+                                    paddingLeft: '1.25rem',
+                                    marginBottom: '1rem',
+                                },
+                                li: {
+                                    color: '#374151',
+                                    marginBottom: '0.25rem',
                                 }
                             }
                         }
@@ -54,7 +80,15 @@
                                 {% endif %}
                             </div>
                             <div class="ml-3">
-                                <p class="text-sm">{{ message }}</p>
+                                <p class="text-sm font-medium">{{ message }}</p>
+                            </div>
+                            <div class="ml-auto pl-3">
+                                <button type="button" onclick="this.closest('.flash-messages > div').remove()" class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 {% if category == 'error' %}text-red-500 hover:bg-red-100 focus:ring-red-600{% else %}text-green-500 hover:bg-green-100 focus:ring-green-600{% endif %}">
+                                    <span class="sr-only">Dismiss</span>
+                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -64,6 +98,23 @@
     </div>
 
     {% block content %}{% endblock %}
+    {% include '_footer.html' %}
+    
     {% block extra_js %}{% endblock %}
+    
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    
+    <script>
+    // Debug information
+    console.log('Base template loaded');
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded');
+        const flashMessages = document.querySelector('.flash-messages');
+        if (flashMessages) {
+            console.log('Flash messages container found');
+            console.log('Current flash messages:', flashMessages.innerHTML);
+        }
+    });
+    </script>
 </body>
 </html>

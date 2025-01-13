@@ -105,15 +105,17 @@ class Document(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(255), nullable=False)
     content = db.Column(db.Text, nullable=False)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     processing_type = db.Column(db.String(50), nullable=False, default='text')  # text, summary, analysis, insurance_requirements
     processed_content = db.Column(db.JSON)  # Store processed results as JSON
     processing_status = db.Column(db.String(20), nullable=False, default='pending')  # pending, completed, failed
 
-    def __init__(self, user_id, filename, content, processing_type=None):
+    def __init__(self, user_id, filename, file_path, content, processing_type=None):
         self.user_id = user_id
         self.filename = filename
+        self.file_path = file_path
         self.content = content
         self.processing_type = processing_type or 'text'
         self.processing_status = 'pending'

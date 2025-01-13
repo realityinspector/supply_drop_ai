@@ -152,12 +152,196 @@ const DocumentManager = {
         
         // Redirect to next step
         window.location.href = '/insurance/wizard?step=2';
+    },
+
+    async uploadRequirements(file) {
+        if (workflowState.isProcessing) return;
+
+        try {
+            workflowState.isProcessing = true;
+            UI.showLoading();
+
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrf_token', csrfToken);
+
+            console.log('Uploading file:', file.name);
+            console.log('CSRF token present:', !!csrfToken);
+
+            const response = await fetch('/insurance/upload-requirements', {
+                method: 'POST',
+                credentials: 'same-origin',  // Include cookies
+                headers: {
+                    'X-CSRFToken': csrfToken  // Flask's default CSRF header name
+                },
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to upload requirements document');
+                }
+
+                // Update workflow state
+                workflowState.documents.requirements = data.document_id;
+                
+                UI.showStatus('Requirements document uploaded successfully! Redirecting...', 'success');
+                
+                // Short delay to show success message
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Redirect to next step
+                window.location.href = '/insurance/wizard?step=2';
+            } else {
+                console.error('Received non-JSON response');
+                const text = await response.text();
+                console.error('Response text:', text);
+                throw new Error('Server returned an invalid response format');
+            }
+
+        } catch (error) {
+            console.error('Requirements upload error:', error);
+            // Extract the most relevant error message
+            let errorMessage = error.message;
+            if (errorMessage.includes('Unexpected error:')) {
+                errorMessage = errorMessage.split('Unexpected error:')[1].trim();
+            }
+            if (errorMessage.includes('Database error:')) {
+                errorMessage = errorMessage.split('Database error:')[1].trim();
+            }
+            if (errorMessage.includes('I/O error:')) {
+                errorMessage = errorMessage.split('I/O error:')[1].trim();
+            }
+            UI.showStatus(errorMessage || 'Failed to upload requirements document', 'error');
+        } finally {
+            workflowState.isProcessing = false;
+            UI.hideLoading();
+        }
+    },
+
+    async uploadClaim(file) {
+        if (workflowState.isProcessing) return;
+
+        try {
+            workflowState.isProcessing = true;
+            UI.showLoading();
+
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('csrf_token', csrfToken);
+
+            console.log('Uploading file:', file.name);
+            console.log('CSRF token present:', !!csrfToken);
+
+            const response = await fetch('/insurance/upload-claim', {
+                method: 'POST',
+                credentials: 'same-origin',  // Include cookies
+                headers: {
+                    'X-CSRFToken': csrfToken  // Flask's default CSRF header name
+                },
+                body: formData
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to upload claim document');
+                }
+
+                // Update workflow state
+                workflowState.documents.claim = data.document_id;
+                
+                UI.showStatus('Claim document uploaded successfully! Redirecting...', 'success');
+                
+                // Short delay to show success message
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Redirect to next step
+                window.location.href = '/insurance/wizard?step=3';
+            } else {
+                console.error('Received non-JSON response');
+                const text = await response.text();
+                console.error('Response text:', text);
+                throw new Error('Server returned an invalid response format');
+            }
+
+        } catch (error) {
+            console.error('Claim upload error:', error);
+            // Extract the most relevant error message
+            let errorMessage = error.message;
+            if (errorMessage.includes('Unexpected error:')) {
+                errorMessage = errorMessage.split('Unexpected error:')[1].trim();
+            }
+            if (errorMessage.includes('Database error:')) {
+                errorMessage = errorMessage.split('Database error:')[1].trim();
+            }
+            if (errorMessage.includes('I/O error:')) {
+                errorMessage = errorMessage.split('I/O error:')[1].trim();
+            }
+            UI.showStatus(errorMessage || 'Failed to upload claim document', 'error');
+        } finally {
+            workflowState.isProcessing = false;
+            UI.hideLoading();
+        }
     }
 };
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     UI.initialize();
+
+    // Add event listeners for file uploads
+    const requirementsUploadForm = document.getElementById('requirementsUploadForm');
+    const claimUploadForm = document.getElementById('claimUploadForm');
+
+    if (requirementsUploadForm) {
+        requirementsUploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = requirementsUploadForm.querySelector('input[type="file"]');
+            if (fileInput.files.length > 0) {
+                await DocumentManager.uploadRequirements(fileInput.files[0]);
+            } else {
+                UI.showStatus('Please select a file to upload', 'error');
+            }
+        });
+    }
+
+    if (claimUploadForm) {
+        claimUploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = claimUploadForm.querySelector('input[type="file"]');
+            if (fileInput.files.length > 0) {
+                await DocumentManager.uploadClaim(fileInput.files[0]);
+            } else {
+                UI.showStatus('Please select a file to upload', 'error');
+            }
+        });
+    }
 });
 
 // Export for potential testing
