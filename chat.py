@@ -13,7 +13,6 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import SQLAlchemyError
 from abbot import ContextManager, get_system_prompt
-from celery import shared_task
 
 # Setup logging with more detailed format
 logging.basicConfig(
@@ -48,22 +47,6 @@ def exponential_backoff(attempt):
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md', 'json'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-@shared_task
-def process_document_task(document_id):
-    try:
-        document = Document.query.get(document_id)
-        if not document:
-            return
-
-        processed_result = process_document(document.content, 'insurance_requirements')
-        document.processed_content = processed_result
-        document.processing_status = 'completed'
-        db.session.commit()
-    except Exception as e:
-        current_app.logger.error(f"Error processing document {document_id}: {str(e)}")
-        document.processing_status = 'failed'
-        db.session.commit()
 
 @chat_bp.route('/')
 def index():
@@ -191,8 +174,12 @@ def upload_requirements():
             return jsonify({'error': 'Invalid file type. Supported formats: PDF, DOCX, TXT, MD, JSON'}), 400
         
         try:
+            current_app.logger.info(f"Starting to process file: {file.filename}")
+            
             # Process the file content
             processed_result = process_document(file, 'text')  # Just extract text for now
+            
+            current_app.logger.info(f"File processed successfully. Creating document record.")
             
             document = Document(
                 user_id=current_user.id,
@@ -204,6 +191,8 @@ def upload_requirements():
             )
             db.session.add(document)
             db.session.commit()
+            
+            current_app.logger.info(f"Document record created successfully. ID: {document.id}")
             
             # Update workflow state in session
             workflow_state = session.get('workflow_state', {})
@@ -218,12 +207,17 @@ def upload_requirements():
             
         except Exception as e:
             current_app.logger.error(f"Error processing file: {str(e)}")
-            return jsonify({'error': 'Failed to process document. Please try again.'}), 500
+            if isinstance(e, IOError):
+                return jsonify({'error': 'Failed to read the file. Please try again.'}), 500
+            elif isinstance(e, ValueError):
+                return jsonify({'error': 'Invalid file content. Please check the file and try again.'}), 400
+            else:
+                return jsonify({'error': 'An unexpected error occurred. Please try again.'}), 500
             
     except Exception as e:
-        current_app.logger.error(f"Error uploading file: {str(e)}")
+        current_app.logger.error(f"Error in upload_requirements: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An unexpected error occurred. Please try again.'}), 500
 
 @chat_bp.route('/insurance/upload-claim', methods=['POST'])
 @login_required
