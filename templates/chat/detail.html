@@ -68,80 +68,85 @@
 
                                             <!-- Improvements Section -->
                                             {% if json_content.analysis.improvements %}
-                                                <!-- High Priority -->
-                                                {% if json_content.analysis.improvements.high_priority %}
-                                                    <div>
-                                                        <h4 class="font-medium text-red-600 mb-2">High Priority</h4>
-                                                        <ul class="space-y-2">
-                                                            {% for item in json_content.analysis.improvements.high_priority %}
-                                                                <li class="text-sm text-gray-700">{{ item }}</li>
-                                                            {% endfor %}
-                                                        </ul>
-                                                    </div>
-                                                {% endif %}
+                                                <div>
+                                                    <h3 class="font-semibold text-gray-900 mb-2">Improvements</h3>
+                                                    
+                                                    {% if json_content.analysis.improvements.high_priority %}
+                                                        <div class="mb-4">
+                                                            <h4 class="text-sm font-medium text-red-600 mb-2">High Priority</h4>
+                                                            <ul class="list-disc list-inside space-y-1">
+                                                                {% for item in json_content.analysis.improvements.high_priority %}
+                                                                    <li class="text-sm text-gray-700">{{ item }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </div>
+                                                    {% endif %}
 
-                                                <!-- Medium Priority -->
-                                                {% if json_content.analysis.improvements.medium_priority %}
-                                                    <div>
-                                                        <h4 class="font-medium text-yellow-600 mb-2">Medium Priority</h4>
-                                                        <ul class="space-y-2">
-                                                            {% for item in json_content.analysis.improvements.medium_priority %}
-                                                                <li class="text-sm text-gray-700">{{ item }}</li>
-                                                            {% endfor %}
-                                                        </ul>
-                                                    </div>
-                                                {% endif %}
+                                                    {% if json_content.analysis.improvements.medium_priority %}
+                                                        <div class="mb-4">
+                                                            <h4 class="text-sm font-medium text-yellow-600 mb-2">Medium Priority</h4>
+                                                            <ul class="list-disc list-inside space-y-1">
+                                                                {% for item in json_content.analysis.improvements.medium_priority %}
+                                                                    <li class="text-sm text-gray-700">{{ item }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </div>
+                                                    {% endif %}
 
-                                                <!-- Low Priority -->
-                                                {% if json_content.analysis.improvements.low_priority %}
-                                                    <div>
-                                                        <h4 class="font-medium text-green-600 mb-2">Low Priority</h4>
-                                                        <ul class="space-y-2">
-                                                            {% for item in json_content.analysis.improvements.low_priority %}
-                                                                <li class="text-sm text-gray-700">{{ item }}</li>
-                                                            {% endfor %}
-                                                        </ul>
-                                                    </div>
-                                                {% endif %}
+                                                    {% if json_content.analysis.improvements.low_priority %}
+                                                        <div>
+                                                            <h4 class="text-sm font-medium text-green-600 mb-2">Low Priority</h4>
+                                                            <ul class="list-disc list-inside space-y-1">
+                                                                {% for item in json_content.analysis.improvements.low_priority %}
+                                                                    <li class="text-sm text-gray-700">{{ item }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
                                             {% endif %}
 
                                             <!-- Details Section -->
                                             {% if json_content.details %}
-                                                <div class="mt-4 pt-4 border-t border-gray-200">
-                                                    <h4 class="font-medium text-gray-900 mb-2">Additional Details</h4>
-                                                    <div class="text-sm text-gray-700">
-                                                        <div class="mb-2">
-                                                            <span class="font-medium">Compliance Score:</span> {{ json_content.details.compliance_score }}
+                                                <div>
+                                                    <h3 class="font-semibold text-gray-900 mb-2">Details</h3>
+                                                    
+                                                    {% if json_content.details.matching_requirements %}
+                                                        <div class="mb-4">
+                                                            <h4 class="text-sm font-medium text-green-600 mb-2">Matching Requirements</h4>
+                                                            <ul class="list-disc list-inside space-y-1">
+                                                                {% for req in json_content.details.matching_requirements %}
+                                                                    <li class="text-sm text-gray-700">{{ req }}</li>
+                                                                {% endfor %}
+                                                            </ul>
                                                         </div>
-                                                        {% if json_content.details.matching_requirements %}
-                                                            <div class="mb-2">
-                                                                <span class="font-medium">Matching Requirements:</span>
-                                                                <ul class="list-disc list-inside">
-                                                                    {% for req in json_content.details.matching_requirements %}
-                                                                        <li>{{ req }}</li>
-                                                                    {% endfor %}
-                                                                </ul>
-                                                            </div>
-                                                        {% endif %}
-                                                        {% if json_content.details.missing_requirements %}
-                                                            <div>
-                                                                <span class="font-medium">Missing Requirements:</span>
-                                                                <ul class="list-disc list-inside">
-                                                                    {% for req in json_content.details.missing_requirements %}
-                                                                        <li>{{ req }}</li>
-                                                                    {% endfor %}
-                                                                </ul>
-                                                            </div>
-                                                        {% endif %}
-                                                    </div>
+                                                    {% endif %}
+
+                                                    {% if json_content.details.missing_requirements %}
+                                                        <div class="mb-4">
+                                                            <h4 class="text-sm font-medium text-red-600 mb-2">Missing Requirements</h4>
+                                                            <ul class="list-disc list-inside space-y-1">
+                                                                {% for req in json_content.details.missing_requirements %}
+                                                                    <li class="text-sm text-gray-700">{{ req }}</li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        </div>
+                                                    {% endif %}
+
+                                                    {% if json_content.details.compliance_score is defined %}
+                                                        <div class="mt-2">
+                                                            <span class="text-sm font-medium text-gray-700">Compliance Score: </span>
+                                                            <span class="text-sm text-gray-600">{{ json_content.details.compliance_score }}</span>
+                                                        </div>
+                                                    {% endif %}
                                                 </div>
                                             {% endif %}
                                         </div>
                                     {% else %}
-                                        <pre class="text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">{{ message.content|pretty_json }}</pre>
+                                        <pre class="text-sm text-gray-700 whitespace-pre-wrap">{{ message.content }}</pre>
                                     {% endif %}
                                 {% else %}
-                                    <pre class="text-sm whitespace-pre-wrap">{{ message.content }}</pre>
+                                    <pre class="text-sm {% if message.role == 'user' %}text-white{% else %}text-gray-700{% endif %} whitespace-pre-wrap">{{ message.content }}</pre>
                                 {% endif %}
                                 <div class="mt-1 text-xs {% if message.role == 'user' %}text-blue-200{% else %}text-gray-500{% endif %}">
                                     {{ message.created_at.strftime('%H:%M') }}

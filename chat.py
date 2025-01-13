@@ -13,6 +13,7 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import SQLAlchemyError
 from abbot import ContextManager, get_system_prompt
+from celery import shared_task
 
 # Setup logging with more detailed format
 logging.basicConfig(
@@ -43,6 +44,26 @@ def pretty_json(value):
 
 def exponential_backoff(attempt):
     time.sleep(min(2 ** attempt, 60))
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md', 'json'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@shared_task
+def process_document_task(document_id):
+    try:
+        document = Document.query.get(document_id)
+        if not document:
+            return
+
+        processed_result = process_document(document.content, 'insurance_requirements')
+        document.processed_content = processed_result
+        document.processing_status = 'completed'
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(f"Error processing document {document_id}: {str(e)}")
+        document.processing_status = 'failed'
+        db.session.commit()
 
 @chat_bp.route('/')
 def index():
@@ -167,41 +188,42 @@ def upload_requirements():
         
         # Validate file
         if not allowed_file(file.filename):
-            return jsonify({'error': 'Invalid file type'}), 400
+            return jsonify({'error': 'Invalid file type. Supported formats: PDF, DOCX, TXT, MD, JSON'}), 400
         
-        # Save file and create document record
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        
-        document = Document(
-            filename=filename,
-            file_path=file_path,
-            user_id=current_user.id,
-            type='requirements'
-        )
-        db.session.add(document)
-        db.session.commit()
-        
-        # Update workflow state in session
-        workflow_state = session.get('workflow_state', {})
-        workflow_state['requirements_doc_id'] = document.id
-        session['workflow_state'] = workflow_state
-        
-        return jsonify({
-            'success': True,
-            'document_id': document.id,
-            'filename': filename
-        })
-        
+        try:
+            # Process the file content
+            processed_result = process_document(file, 'text')  # Just extract text for now
+            
+            document = Document(
+                user_id=current_user.id,
+                filename=file.filename,
+                content=processed_result.get('raw_text', ''),
+                processing_type='insurance_requirements',
+                processed_content=processed_result,
+                processing_status='completed'
+            )
+            db.session.add(document)
+            db.session.commit()
+            
+            # Update workflow state in session
+            workflow_state = session.get('workflow_state', {})
+            workflow_state['requirements_doc_id'] = document.id
+            session['workflow_state'] = workflow_state
+            
+            return jsonify({
+                'success': True,
+                'document_id': document.id,
+                'filename': document.filename
+            })
+            
+        except Exception as e:
+            current_app.logger.error(f"Error processing file: {str(e)}")
+            return jsonify({'error': 'Failed to process document. Please try again.'}), 500
+            
     except Exception as e:
         current_app.logger.error(f"Error uploading file: {str(e)}")
-        return jsonify({'error': 'Failed to upload file'}), 500
-
-def allowed_file(filename):
-    """Check if a filename has an allowed extension"""
-    ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md', 'json'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @chat_bp.route('/insurance/upload-claim', methods=['POST'])
 @login_required
@@ -291,8 +313,13 @@ def analyze_documents():
         previous_chat_id = request.form.get('previous_chat_id')
         previous_messages = []
         if previous_chat_id:
-            previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
-            previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
+            try:
+                previous_messages = Message.query.filter_by(chat_id=previous_chat_id).order_by(Message.created_at).all()
+                previous_messages = [{"role": msg.role, "content": msg.content} for msg in previous_messages]
+                current_app.logger.info(f"Retrieved {len(previous_messages)} previous messages")
+            except Exception as e:
+                current_app.logger.error(f"Error retrieving previous messages: {str(e)}")
+                previous_messages = []
 
         chat = Chat(user_id=current_user.id, title=f"Insurance Analysis - {backend_analysis_type}")
         db.session.add(chat)
@@ -316,6 +343,20 @@ def analyze_documents():
             db.session.rollback()
             return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
+        # Ensure analysis_result is JSON serializable
+        try:
+            json_content = json.dumps(analysis_result)
+            message = Message(
+                chat_id=chat.id,
+                content=json_content,
+                role='assistant'
+            )
+            db.session.add(message)
+        except Exception as e:
+            current_app.logger.error(f"Error serializing analysis result: {str(e)}")
+            db.session.rollback()
+            return jsonify({'error': 'Failed to process analysis results'}), 500
+
         claim = InsuranceClaim(
             user_id=current_user.id,
             requirement_id=workflow_state['requirements_doc_id'],
@@ -324,13 +365,6 @@ def analyze_documents():
             analysis_result=analysis_result
         )
         db.session.add(claim)
-
-        message = Message(
-            chat_id=chat.id,
-            content=json.dumps(analysis_result, indent=2),
-            role='assistant'
-        )
-        db.session.add(message)
         
         try:
             db.session.commit()
@@ -340,13 +374,14 @@ def analyze_documents():
             db.session.rollback()
             return jsonify({'error': 'Failed to save analysis results'}), 500
 
-        # Clear workflow state after analysis
-        session.pop('workflow_state', None)
+        # Don't clear workflow state to allow for follow-up analyses
+        # session.pop('workflow_state', None)
 
         return jsonify({
             'success': True,
             'chat_id': chat.id,
-            'message': 'Analysis completed successfully'
+            'message': 'Analysis completed successfully',
+            'analysis_result': analysis_result
         })
 
     except Exception as e:
@@ -549,4 +584,16 @@ def send_abbot_message():
     return jsonify({
         'user_message': user_message.to_dict(),
         'ai_message': ai_message.to_dict()
+    })
+
+@chat_bp.route('/insurance/document-status/<int:document_id>')
+@login_required
+def document_status(document_id):
+    document = Document.query.get_or_404(document_id)
+    if document.user_id != current_user.id:
+        abort(403)
+    
+    return jsonify({
+        'status': document.processing_status,
+        'filename': document.filename
     })

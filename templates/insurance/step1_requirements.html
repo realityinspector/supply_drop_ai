@@ -31,10 +31,12 @@
         <h4 class="font-medium mb-2">Upload New Document</h4>
         <div class="border rounded p-4">
             <form id="requirementsForm" action="{{ url_for('chat.upload_requirements') }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div>
                     <input type="file" name="file" id="file" accept=".pdf,.docx,.txt,.md,.json"
                            class="mb-4">
                     <button type="submit" 
+                            id="uploadButton"
                             class="bg-indigo-400 text-white px-4 py-2 rounded hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
                         Upload Document
                     </button>
@@ -61,6 +63,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const existingDocSelect = document.getElementById('existingDocumentSelect');
     const reuseDocBtn = document.getElementById('reuseDocumentBtn');
     const requirementsForm = document.getElementById('requirementsForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const statusElement = document.getElementById('requirementsStatus');
+    const uploadButton = document.getElementById('uploadButton');
+    
+    function showLoading(message = 'Processing document...') {
+        loadingOverlay.classList.remove('hidden');
+        document.getElementById('loadingText').textContent = message;
+        uploadButton.disabled = true;
+        if (reuseDocBtn) reuseDocBtn.disabled = true;
+    }
+    
+    function hideLoading() {
+        loadingOverlay.classList.add('hidden');
+        uploadButton.disabled = false;
+        if (reuseDocBtn) reuseDocBtn.disabled = !existingDocSelect.value;
+    }
+    
+    function showError(message) {
+        statusElement.textContent = message;
+        statusElement.className = 'status-message text-red-500 mt-4';
+    }
     
     if (existingDocSelect && reuseDocBtn) {
         // Initial state
@@ -72,75 +95,72 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Add click event handler for the button
-        reuseDocBtn.addEventListener('click', function(e) {
+        reuseDocBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            if (existingDocSelect.value) {
+            if (!existingDocSelect.value) return;
+
+            try {
+                showLoading('Reusing selected document...');
                 const formData = new FormData();
                 formData.append('reuse_document_id', existingDocSelect.value);
-                submitForm(formData);
+                formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+
+                const response = await fetch('{{ url_for("chat.upload_requirements") }}', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to reuse document');
+                }
+
+                window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+            } finally {
+                hideLoading();
             }
         });
     }
 
     // Handle form submission for new file upload
-    requirementsForm.addEventListener('submit', function(e) {
+    requirementsForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        submitForm(new FormData(this));
-    });
+        const formData = new FormData(this);
+        const fileInput = document.getElementById('file');
 
-    function submitForm(formData) {
-        // Add CSRF token from meta tag
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        formData.append('csrf_token', csrfToken);
-
-        // Log the formData being sent
-        for (let [key, value] of formData.entries()) {
-            console.log(key, value);
+        if (!fileInput.files[0]) {
+            showError('Please select a file');
+            return;
         }
 
-        fetch('{{ url_for("chat.upload_requirements") }}', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: formData
-        })
-        .then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response headers:', response.headers);
+        try {
+            showLoading();
+            statusElement.textContent = 'Uploading...';
+            statusElement.className = 'status-message text-blue-500 mt-4';
 
-            if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json().then(data => {
-                        console.log('JSON response:', data);
-                        if (data.success) {
-                            window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
-                        } else {
-                            alert(data.error || 'An error occurred while processing your request.');
-                        }
-                    });
-                } else {
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        window.location.reload();
-                    }
-                }
-            } else if (response.status === 400) {
-                return response.text().then(text => {
-                    console.error('Bad Request Error:', text);
-                    alert('Bad Request Error: ' + text);
-                });
-            } else {
-                throw new Error('Network response was not ok.');
+            const response = await fetch(this.action, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || 'Upload failed');
             }
-        })
-        .catch(error => {
+
+            window.location.href = '{{ url_for("chat.insurance_wizard", step=2) }}';
+        } catch (error) {
             console.error('Error:', error);
-            alert('An error occurred while processing your request: ' + error.message);
-        });
-    }
+            showError(error.message);
+        } finally {
+            hideLoading();
+        }
+    });
 });
 </script>
 {% endblock %}
