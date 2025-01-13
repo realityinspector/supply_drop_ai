@@ -13,11 +13,30 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
+args = "Flask Web Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
 args = "Tailwind CSS Build"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Flask Server"
+
+[[workflows.workflow]]
+name = "Flask Web Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 main.py"
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Tailwind CSS Build"
@@ -45,7 +64,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "python app.py"
 waitForPort = 5000
 
 [deployment]
