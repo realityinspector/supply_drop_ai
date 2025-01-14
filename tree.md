@@ -4,80 +4,27 @@
 
 ```
 ├── README.md
-├── abbot.py
-├── app.py
 ├── chat.py
-├── chatgptdocs.md
-├── database.py
-├── database_manager.py
-├── design_plan.md
 ├── document_processor.py
-├── extensions.py
-├── fema.py
-├── filters.py
 ├── main.py
 ├── migrations/
 │   ├── env.py
 │   ├── versions/
 │   │   ├── 974c2c48d4de_add_file_path_to_document_model.py
 │   │   ├── f2ad1fb7dd31_initial_migration.py
-├── models.py
 ├── package-lock.json
 ├── package.json
-├── profile.py
 ├── prompt_abbot.json
-├── prompts.json
 ├── rejection.py
 ├── resource_finder.py
 ├── static/
 │   └── [1 image files]
 │   ├── css/
-│   │   ├── custom.css
-│   │   ├── dist.css
-│   │   ├── main.css
-│   ├── js/
-│   │   ├── chat.js
-│   │   ├── fema-workflow.js
-│   │   ├── insurance-upload.js
-│   │   ├── insurance-workflow.js
-│   │   ├── main.js
-│   │   ├── navigation.js
 │   ├── video/
 ├── templates/
-│   ├── _footer.html
-│   ├── _nav.html
-│   ├── abbot/
-│   │   ├── chat.html
 │   ├── base.html
-│   ├── chat/
-│   │   ├── chat.html
-│   │   ├── dashboard.html
-│   │   ├── detail.html
-│   │   ├── first_time_user.html
-│   │   ├── list.html
-│   ├── checklists.html
 │   ├── dashboard.html
-│   ├── documents/
-│   │   ├── list.html
-│   │   ├── view.html
 │   ├── documents.html
-│   ├── fema/
-│   │   ├── base_fema.html
-│   │   ├── step1_requirements.html
-│   │   ├── step2_form.html
-│   │   ├── step3_analysis.html
-│   │   ├── wizard.html
-│   ├── index.html
-│   ├── insurance/
-│   │   ├── base_insurance.html
-│   │   ├── start.html
-│   │   ├── step1_requirements.html
-│   │   ├── step2_claim.html
-│   │   ├── step3_analysis.html
-│   │   ├── wizard.html
-│   ├── profile/
-│   │   ├── reports.html
-│   │   ├── view.html
 │   ├── rejection/
 │   │   ├── wizard.html
 │   ├── resources/

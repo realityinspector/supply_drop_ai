@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, jsonify, session
 from openai import OpenAI
+import json
 
 resource_finder_bp = Blueprint('resource_finder', __name__)
 client = OpenAI()
@@ -23,15 +24,18 @@ def chat():
     context.append({"role": "user", "content": data['message']})
     
     try:
+        # Load system prompt from prompt_abbot.json
+        with open('prompt_abbot.json', 'r') as f:
+            prompt_data = json.load(f)
+            system_prompt = prompt_data['system_prompt_abbot_ai']
+        
         # Get AI response
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {
                     "role": "system",
-                    "content": """You are a helpful resource finder for emergency preparedness and disaster response. 
-                    Your goal is to help users find relevant resources, information, and assistance for emergency situations.
-                    Focus on providing actionable information and reliable resources. Be concise and clear in your responses."""
+                    "content": system_prompt
                 },
                 *context
             ]
