@@ -1,43 +1,187 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<!-- Hero Section -->
+<section class="bg-dark text-white py-5">
+  <div class="container text-center">
+    <h1 class="display-4 mb-4">Emergency Preparedness Assistant</h1>
+    <p class="lead mb-4">
+      An open-source initiative to empower communities during disasters
+    </p>
+    <p class="mb-4">
+      Inspired by Hurricane Helene's impact on Western North Carolina and the
+      Los Angeles fires, we're building tools to help communities respond to
+      disasters together.
+    </p>
+    <div class="d-flex justify-content-center gap-3 mb-4">
+      <a href="{{ url_for('resource_finder') }}" class="btn btn-primary btn-lg">
+        Find Resources
+      </a>
+      <a
+        href="{{ url_for('rejection_simulation') }}"
+        class="btn btn-outline-light btn-lg"
+      >
+        Try Rejection Simulation
+      </a>
+    </div>
+    <a
+      href="https://github.com/yourusername/supply-drop"
+      class="btn btn-primary btn-lg"
+    >
+      Join us on GitHub
+    </a>
+  </div>
+</section>
 
-{% block content %}
-<h1 class="page-title">Emergency Preparedness Assistant</h1>
-<p class="page-subtitle">Your AI-powered companion for emergency planning and response.</p>
+<!-- Important Disclaimer -->
+<div class="container my-5">
+  <div class="alert alert-danger">
+    <h4 class="alert-heading">⚠️ Important Notice</h4>
+    <p class="mb-2">
+      THIS IS A DEMO SITE NOT MEANT FOR REAL USE. ANY DATA YOU SHARE WILL BE
+      SEEN BY THE DEVELOPERS.
+    </p>
+    <hr />
+    <p class="mb-0">
+      This is an open source experimental prototype. It is not intended to
+      provide official advice or replace professional assistance. Do not rely on
+      these tools for emergency response. Always contact official emergency
+      services and follow local authority guidance.
+    </p>
+  </div>
+</div>
 
 <!-- Tools Section -->
-<section class="mt-5">
-    <div class="row g-4">
-        <!-- Resource Finder -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h4 mb-3">Resource Finder</h3>
-                    <p class="text-muted mb-4">Quickly locate emergency resources and assistance in your area.</p>
-                    <ul class="list-unstyled mb-4">
-                        <li class="mb-2">✓ Real-time resource availability</li>
-                        <li class="mb-2">✓ Location-based recommendations</li>
-                        <li class="mb-2">✓ Direct contact information</li>
-                    </ul>
-                    <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">Find Resources</a>
-                </div>
-            </div>
+<section class="container py-5">
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="card-title">Resource Finder</h3>
+          <p class="card-text">
+            Quickly locate emergency resources using an OpenAI chatbot that has
+            access to public data sources, including community resources like
+            Kidness Hub (not affiliated) in Los Angeles.
+          </p>
+          <ul class="list-unstyled mb-4">
+            <li>✓ Real-time resource availability</li>
+            <li>✓ Location-based recommendations</li>
+            <li>✓ Direct contact information</li>
+          </ul>
+          <a
+            href="https://docs.google.com/spreadsheets/d/your-sheet-id"
+            class="text-primary d-block mb-3"
+          >
+            View & Contribute to the Resource Database
+          </a>
+          <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">
+            Find Resources
+          </a>
         </div>
-        
-        <!-- Rejection Simulation -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h4 mb-3">Rejection Simulation</h3>
-                    <p class="text-muted mb-4">Practice and prepare for assistance application processes.</p>
-                    <ul class="list-unstyled mb-4">
-                        <li class="mb-2">✓ FEMA application scenarios</li>
-                        <li class="mb-2">✓ Insurance claim simulations</li>
-                        <li class="mb-2">✓ Document requirement guides</li>
-                    </ul>
-                    <a href="{{ url_for('rejection_simulation') }}" class="btn btn-primary">Start Simulation</a>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="card-title">Rejection Simulation</h3>
+          <p class="card-text">
+            Practice application processes with our AI reviewer that simulates
+            real-world scenarios and common rejection patterns for claims,
+            forms, and things like grant and loan applications. Sharpen your
+            proposals and avoid painful mistakes.
+          </p>
+          <ul class="list-unstyled mb-4">
+            <li>✓ AI-powered application review simulation</li>
+            <li>✓ Insurance claim rejection patterns</li>
+            <li>✓ Assistance application scenarios</li>
+            <li>✓ Grant application feedback</li>
+          </ul>
+          <a
+            href="{{ url_for('rejection_simulation') }}"
+            class="btn btn-primary"
+          >
+            Start Simulation
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
+
+<!-- Coming Soon Section -->
+<section class="bg-light py-5">
+  <div class="container">
+    <h2 class="mb-4">Coming Soon</h2>
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="h5">Video Damage Analysis</h3>
+            <p class="mb-0">
+              AI-powered assessment of disaster damage from video footage
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="h5">Resource API</h3>
+            <p class="mb-0">
+              Developer-friendly API for chat and resources fine-tuned for
+              disaster recovery
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="h5">Supply Drop Saturdays</h3>
+            <p class="mb-0">
+              In-person pop-up events with preparedness supplies
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h3 class="h5">Family Business Events</h3>
+            <p class="mb-0">
+              Partner with
+              <a href="https://AllOneThing.xyz" target="_blank"
+                >AllOneThing.xyz</a
+              >
+              to provide childcare while parents do recovery forms, grants, and
+              resource allocation and small business management and recovery
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-dark text-white py-5 mt-5">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4">
+        <h3 class="h5">About Supply Drop</h3>
+        <p>An open source project to help communities prepare for and recover from disasters.</p>
+      </div>
+      <div class="col-md-4">
+        <h3 class="h5">Important Links</h3>
+        <ul class="list-unstyled">
+          <li><a href="{{ url_for('legal') }}" class="text-white">Terms & Privacy</a></li>
+          <li><a href="https://github.com/yourusername/supply-drop" class="text-white">GitHub</a></li>
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <h3 class="h5">Disclaimers</h3>
+        <p>This is an experimental prototype. Not for emergency use. Always follow official guidance in emergencies.</p>
+      </div>
+    </div>
+  </div>
+</footer>
 {% endblock %}

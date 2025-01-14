@@ -1,11 +1,11 @@
 import os
 import json
 from openai import OpenAI
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, jsonify
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import StringField, SubmitField, TextAreaField, MultipleFileField
+from wtforms.validators import DataRequired, Optional
 from werkzeug.utils import secure_filename
 from PyPDF2 import PdfFileReader
 import bleach
@@ -36,8 +36,14 @@ def allowed_file(filename):
 # SIMPLE FORM FOR OPENAI KEY (using Flask-WTF)
 # ------------------------------------------------------------------------
 class OpenAIKeyForm(FlaskForm):
-    openai_key = StringField('OpenAI API Key', validators=[DataRequired()], default=os.getenv('OPENAI_API_KEY'))
+    openai_key = StringField('OpenAI API Key', validators=[Optional()], default=os.getenv('OPENAI_API_KEY'))
     submit = SubmitField('Use Key')
+
+class RejectionSimulationForm(FlaskForm):
+    openai_key = StringField('OpenAI API Key', validators=[Optional()], default=os.getenv('OPENAI_API_KEY'))
+    user_message = TextAreaField('Describe Your Situation', validators=[DataRequired()])
+    documents = MultipleFileField('Supporting Documents')
+    submit = SubmitField('Start Simulation')
 
 # ------------------------------------------------------------------------
 # HELPER FUNCTIONS FOR LOADING PROMPTS AND PROCESSING FILES
@@ -93,15 +99,16 @@ def resource_finder():
     if form.validate_on_submit():
         user_message = request.form.get('user_message', '').strip()
         if not user_message:
-            return "Please enter a question", 400
+            return jsonify({"error": "Please enter a question"}), 400
 
         try:
             # Initialize OpenAI client with form API key
-            client = OpenAI(api_key=form.openai_key.data)
+            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
+            client = OpenAI(api_key=api_key)
 
             # Make API call using new client format
             response = client.chat.completions.create(
-                model="gpt-4",
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": RESOURCE_FINDER_PROMPT},
                     {"role": "user", "content": user_message}
@@ -111,11 +118,11 @@ def resource_finder():
 
             # Extract and return the response
             chatbot_answer = response.choices[0].message.content
-            return chatbot_answer
+            return jsonify({"answer": chatbot_answer})
 
         except Exception as e:
             app.logger.error(f"OpenAI API Error: {str(e)}")
-            return f"An error occurred: {str(e)}", 500
+            return jsonify({"error": str(e)}), 500
 
     return render_template("resource_finder.html", form=form)
 
@@ -124,64 +131,69 @@ def rejection_simulation():
     """
     Rejection Simulation tool for insurance, FEMA, or grant applications
     """
-    form = OpenAIKeyForm()
-    simulation_result = None
+    form = RejectionSimulationForm()
+
+    if request.method == 'GET':
+        return render_template("rejection_simulation.html", form=form)
 
     if form.validate_on_submit():
-        user_message = request.form.get('user_message', '').strip()
+        user_message = form.user_message.data.strip()
+        if not user_message:
+            return jsonify({"error": "Please describe your situation"}), 400
 
         # Process uploaded files
-        uploaded_files = request.files.getlist('pdf_files')
+        uploaded_files = request.files.getlist('documents')
         pdf_context = ""
 
         if len(uploaded_files) > 5:
-            flash('Maximum 5 files allowed.', 'error')
-            return render_template(
-                "rejection_simulation.html",
-                form=form,
-                simulation_result=None
-            )
+            return jsonify({"error": "Maximum 5 files allowed."}), 400
 
         # Process each uploaded file
         for pdf_file in uploaded_files:
             if pdf_file and pdf_file.filename:
                 if not allowed_file(pdf_file.filename):
-                    flash(f'Invalid file type: {pdf_file.filename}. Only PDF files are allowed.', 'error')
-                    continue
+                    return jsonify({"error": f"Invalid file type: {pdf_file.filename}. Only PDF files are allowed."}), 400
 
                 success, result = extract_and_clean_pdf_text(pdf_file)
                 if success:
                     pdf_context += f"\nContent from {pdf_file.filename}:\n{result}\n"
                 else:
-                    flash(result, 'error')
+                    return jsonify({"error": result}), 400
 
         # Combine user message and PDF content
         full_message = user_message
         if pdf_context:
             full_message = f"Application Details:\n{user_message}\n\nSupporting Documents:\n{pdf_context}"
 
-        if full_message:
-            try:
-                # Initialize OpenAI client with form API key
-                client = OpenAI(api_key=form.openai_key.data)
-                
-                response = client.chat.completions.create(
-                    model="gpt-4",
-                    messages=[
-                        {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
-                        {"role": "user", "content": full_message}
-                    ],
-                    temperature=0.7
-                )
-                simulation_result = response.choices[0].message.content
-            except Exception as e:
-                flash(f'Error processing request: {str(e)}', 'error')
+        try:
+            # Initialize OpenAI client with form API key
+            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
+            client = OpenAI(api_key=api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
+                    {"role": "user", "content": full_message}
+                ],
+                temperature=0.7
+            )
+            simulation_result = response.choices[0].message.content
+            return jsonify({"answer": simulation_result})
+            
+        except Exception as e:
+            app.logger.error(f"OpenAI API Error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
 
-    return render_template(
-        "rejection_simulation.html",
-        form=form,
-        simulation_result=simulation_result
-    )
+    # If form validation failed
+    return jsonify({"error": "Invalid form submission"}), 400
+
+@app.route("/legal")
+def legal():
+    """
+    Combined Terms of Use and Privacy Policy page
+    """
+    return render_template("legal.html")
 
 # ------------------------------------------------------------------------
 # RUN THE APP

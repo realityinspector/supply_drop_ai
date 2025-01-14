@@ -1,84 +1,222 @@
-{% extends "base.html" %}
-
-{% block content %}
-<h1 class="page-title">Rejection Simulation</h1>
-<p class="page-subtitle">Practice and prepare for assistance applications</p>
-
-<div class="card">
-    <div class="card-body">
-        <form method="POST" enctype="multipart/form-data">
-            {{ form.hidden_tag() }}
-            <div class="mb-4">
-                {{ form.openai_key.label(class="form-label") }}
-                {{ form.openai_key(class="form-control") }}
-            </div>
-            <div class="mb-4">
-                <label for="user_message" class="form-label">Describe Your Situation</label>
-                <textarea name="user_message" id="user_message" rows="3" class="form-control" 
-                          placeholder="Example: I need to apply for FEMA assistance after a wildfire damaged my home..." required></textarea>
-            </div>
-            <div class="mb-4">
-                <label class="form-label">Supporting Documents</label>
-                <div class="bg-light p-3 rounded">
-                    <input type="file" name="pdf_files" multiple accept=".pdf" class="form-control"
-                           onchange="validateFiles(this)" />
-                    <div class="mt-2">
-                        <small class="text-muted">
-                            <span class="me-3">✓ PDF files only</span>
-                            <span class="me-3">✓ Up to 5 files</span>
-                            <span>✓ Max 16MB each</span>
-                        </small>
-                    </div>
-                </div>
-            </div>
-            {{ form.submit(class="btn btn-primary") }}
-        </form>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert {% if category == 'error' %}alert-danger{% else %}alert-success{% endif %} mt-4">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        {% if simulation_result %}
-        <div class="mt-4">
-            <h2 class="h5 mb-3">Simulation Results</h2>
-            <div class="bg-light p-3 rounded">
-                {{ simulation_result | safe }}
-            </div>
-        </div>
-        {% endif %}
+{% extends "base.html" %} {% block content %}
+<div class="container py-5">
+  <!-- Introduction -->
+  <div class="row mb-5">
+    <div class="col-lg-8 mx-auto text-center">
+      <h1 class="display-5 mb-3">Rejection Simulation</h1>
+      <p class="lead text-muted mb-4">
+        Practice with our AI reviewer that simulates real application processes.
+        Get feedback on common rejection patterns and learn how to strengthen
+        your applications before submitting them.
+      </p>
     </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <!-- Example Scenarios -->
+      <div class="mb-4">
+        <h6 class="text-muted mb-3">Common scenarios we can help with:</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >I need to apply for FEMA assistance after a wildfire damaged my
+            home</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Preparing insurance claim for flood damage to my business</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Applying for an SBA disaster loan for my restaurant</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Emergency grant application for our community center</a
+          >
+        </div>
+      </div>
+
+      <!-- Main Form -->
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form
+            id="simulation-form"
+            method="POST"
+            enctype="multipart/form-data"
+          >
+            {{ form.hidden_tag() }}
+
+            <!-- Main Situation Input -->
+            <div class="mb-4">
+              <label for="user_message" class="form-label h5"
+                >Describe Your Situation</label
+              >
+              {{ form.user_message(class="form-control form-control-lg", rows=4,
+              placeholder="Describe the assistance you're applying for and your
+              situation...", required=true) }}
+              <div class="form-text">
+                Include details about the disaster, your situation, and what
+                type of assistance you're seeking
+              </div>
+            </div>
+
+            <!-- Document Upload -->
+            <div class="mb-4">
+              <label class="form-label h5">Supporting Documents</label>
+              <div class="input-group mb-2">
+                {{ form.documents(class="form-control", accept=".pdf") }}
+              </div>
+              <div class="form-text">
+                <ul class="mb-0 ps-3">
+                  <li>PDF files only</li>
+                  <li>Up to 5 files</li>
+                  <li>Maximum 16MB each</li>
+                  <li>
+                    Examples: damage photos, insurance documents, proof of
+                    residence
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Optional API Key (Collapsed by Default) -->
+            <div class="mb-4">
+              <details class="mt-3">
+                <summary class="text-muted small">
+                  Advanced: Use your own API key
+                </summary>
+                <div class="mt-2">
+                  <label class="form-label small">OpenAI API Key</label>
+                  {{ form.openai_key(class="form-control", type="password",
+                  placeholder="sk-...") }}
+                  <div class="form-text">
+                    For privacy, you can use your own key. Leave empty to use
+                    our demo key.
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-lg w-100") }}
+          </form>
+
+          <!-- Results Container -->
+          <div
+            id="answer-container"
+            class="mt-4 {% if not simulation_result %}d-none{% endif %}"
+          >
+            <h2 class="h5 mb-3">Simulation Results</h2>
+            <div id="answer-content" class="bg-light p-4 rounded border">
+              {% if simulation_result %} {{ simulation_result | safe }} {% endif
+              %}
+            </div>
+          </div>
+
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %}
+          <div
+            class="alert alert-{{ category if category != 'message' else 'info' }} mt-4"
+          >
+            {{ message }}
+          </div>
+          {% endfor %} {% endif %} {% endwith %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    function validateFiles(input) {
-        const maxFiles = 5;
-        const maxSize = 16 * 1024 * 1024; // 16MB
-        const files = input.files;
+  // Make example scenarios clickable
+  document.querySelectorAll(".example-query").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const textarea = document.getElementById("user_message");
+      textarea.value = e.target.textContent;
+      textarea.focus();
+      // Optionally auto-submit
+      // document.getElementById('simulation-form').requestSubmit();
+    });
+  });
 
-        if (files.length > maxFiles) {
-            alert(`Please select a maximum of ${maxFiles} files.`);
-            input.value = '';
-            return;
-        }
+  // Ensure API key is always hidden
+  const apiKeyInput = document.querySelector('input[name="openai_key"]');
+  apiKeyInput.setAttribute("type", "password");
 
-        for (let i = 0; i < files.length; i++) {
-            if (files[i].size > maxSize) {
-                alert(`File "${files[i].name}" exceeds the 16MB size limit.`);
-                input.value = '';
-                return;
-            }
-            if (!files[i].name.toLowerCase().endsWith('.pdf')) {
-                alert(`File "${files[i].name}" is not a PDF file.`);
-                input.value = '';
-                return;
-            }
-        }
+  // File validation
+  const documentsInput = document.querySelector('input[name="documents"]');
+  documentsInput.addEventListener("change", (e) => {
+    const files = e.target.files;
+    const maxFiles = 5;
+    const maxSize = 16 * 1024 * 1024; // 16MB
+
+    if (files.length > maxFiles) {
+      alert(`Please select a maximum of ${maxFiles} files.`);
+      e.target.value = "";
+      return;
     }
+
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].size > maxSize) {
+        alert(`File "${files[i].name}" exceeds the 16MB size limit.`);
+        e.target.value = "";
+        return;
+      }
+      if (!files[i].name.toLowerCase().endsWith(".pdf")) {
+        alert(`File "${files[i].name}" is not a PDF file.`);
+        e.target.value = "";
+        return;
+      }
+    }
+  });
+
+  document
+    .getElementById("simulation-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+      const formData = new FormData(form);
+      const submitButton = form.querySelector('input[type="submit"]');
+      const answerContainer = document.getElementById("answer-container");
+      const answerContent = document.getElementById("answer-content");
+
+      // Show loading state
+      submitButton.disabled = true;
+      submitButton.value = "Running Simulation...";
+      answerContainer.classList.add("d-none");
+
+      try {
+        const response = await fetch('{{ url_for("rejection_simulation") }}', {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "An error occurred while processing your request",
+          );
+        }
+
+        // Show results
+        answerContent.innerHTML = data.answer;
+        answerContainer.classList.remove("d-none");
+      } catch (error) {
+        console.error("Error:", error);
+        answerContent.innerHTML = `<div class="alert alert-danger">${error.message || "An error occurred while running the simulation. Please try again."}</div>`;
+        answerContainer.classList.remove("d-none");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.value = "Start Simulation";
+      }
+    });
 </script>
-{% endblock %} 
+{% endblock %}

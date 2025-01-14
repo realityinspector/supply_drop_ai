@@ -1,62 +1,174 @@
-{% extends "base.html" %}
-
-{% block content %}
-<h1 class="page-title">Resource Finder</h1>
-<p class="page-subtitle">Find emergency resources and assistance in your area</p>
-
-<div class="card">
-    <div class="card-body">
-        <form id="resource-form" method="POST">
-            {{ form.hidden_tag() }}
-            <div class="mb-4">
-                {{ form.openai_key.label(class="form-label") }}
-                {{ form.openai_key(class="form-control") }}
-            </div>
-            <div class="mb-4">
-                <label for="user_message" class="form-label">What resources are you looking for?</label>
-                <textarea name="user_message" id="user_message" rows="3" class="form-control" 
-                          placeholder="Example: Where can I find emergency shelter in Los Angeles?" required></textarea>
-            </div>
-            {{ form.submit(class="btn btn-primary") }}
-        </form>
-
-        <div id="answer-container" class="mt-4 d-none">
-            <h2 class="h5 mb-3">Available Resources</h2>
-            <div id="answer-content" class="bg-light p-3 rounded"></div>
-        </div>
+{% extends "base.html" %} {% block content %}
+<div class="container py-5">
+  <!-- Introduction -->
+  <div class="row mb-5">
+    <div class="col-lg-8 mx-auto text-center">
+      <h1 class="display-5 mb-3">Resource Finder</h1>
+      <p class="lead text-muted mb-4">
+        Our AI-powered tool searches through thousands of community resources,
+        emergency services, and assistance programs to find what you need. Just
+        describe your situation in plain language.
+      </p>
     </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <!-- Example Queries -->
+      <div class="mb-4">
+        <h6 class="text-muted mb-3">Example questions you can ask:</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Where can I find emergency shelter in Los Angeles?</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Food banks near Western North Carolina accepting donations</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Mental health resources for disaster survivors</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >Emergency pet shelters that are open now</a
+          >
+        </div>
+      </div>
+
+      <!-- Main Form -->
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <form id="resource-form" method="POST">
+            {{ form.hidden_tag() }}
+
+            <!-- Main Query Input -->
+            <div class="mb-4">
+              <label for="user_message" class="form-label h5"
+                >What resources are you looking for?</label
+              >
+              <textarea
+                name="user_message"
+                id="user_message"
+                rows="3"
+                class="form-control form-control-lg"
+                placeholder="Describe what you need help with..."
+                required
+              ></textarea>
+              <div class="form-text">
+                Be specific about your location and immediate needs
+              </div>
+            </div>
+
+            <!-- Optional API Key (Collapsed by Default) -->
+            <div class="mb-4">
+              <details class="mt-3">
+                <summary class="text-muted small">
+                  Advanced: Use your own API key
+                </summary>
+                <div class="mt-2">
+                  <label class="form-label small">OpenAI API Key</label>
+                  {{ form.openai_key(class="form-control", type="password",
+                  placeholder="sk-...", autocomplete="off") }}
+                  <div class="form-text">
+                    For privacy, you can use your own key. Leave empty to use
+                    our demo key.
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-lg w-100", value="Find
+            Resources") }}
+          </form>
+
+          <!-- Results Container -->
+          <div id="answer-container" class="mt-4 d-none">
+            <h2 class="h5 mb-3">Available Resources</h2>
+            <div id="answer-content" class="bg-light p-4 rounded border"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Sources Info -->
+      <div class="mt-4 text-center text-muted">
+        <small>
+          For LA Wildfires, the data comes from
+          <a
+            href="https://docs.google.com/spreadsheets/d/10Sn4cddIIvFTHQIv-Bi5oENadPTKLCRyUqBjkb16EBI/edit?gid=49937483#gid=49937483"
+            target="_blank"
+            >Kidness Hub</a
+          >. For Western North Carolina, the data comes from a variety of public
+          data sources.
+        </small>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
-    document.getElementById('resource-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const form = e.target;
-        const formData = new FormData(form);
-        
-        try {
-            const response = await fetch('{{ url_for("resource_finder") }}', {
-                method: 'POST',
-                body: formData
-            });
+  // Make example queries clickable
+  document.querySelectorAll(".example-query").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const textarea = document.getElementById("user_message");
+      textarea.value = e.target.textContent;
+      textarea.focus();
+      // Optionally auto-submit
+      // document.getElementById('resource-form').requestSubmit();
+    });
+  });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+  // Ensure API key is always hidden
+  const apiKeyInput = document.querySelector('input[name="openai_key"]');
+  apiKeyInput.setAttribute("type", "password");
 
-            const result = await response.text();
+  document
+    .getElementById("resource-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-            // Update the answer container
-            const answerContainer = document.getElementById('answer-container');
-            const answerContent = document.getElementById('answer-content');
-            answerContent.innerHTML = result;
-            answerContainer.classList.remove('d-none');
-            
-        } catch (error) {
-            console.error('Error:', error);
-            const answerContainer = document.getElementById('answer-container');
-            answerContainer.classList.add('d-none');
+      const form = e.target;
+      const formData = new FormData(form);
+      const submitButton = form.querySelector('input[type="submit"]');
+      const answerContainer = document.getElementById("answer-container");
+      const answerContent = document.getElementById("answer-content");
+
+      // Show loading state
+      submitButton.disabled = true;
+      submitButton.value = "Searching Resources...";
+      answerContainer.classList.add("d-none");
+
+      try {
+        const response = await fetch('{{ url_for("resource_finder") }}', {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "An error occurred while processing your request",
+          );
         }
+
+        // Show results
+        answerContent.innerHTML = data.answer;
+        answerContainer.classList.remove("d-none");
+      } catch (error) {
+        console.error("Error:", error);
+        answerContent.innerHTML = `<div class="text-danger">${error.message || "An error occurred while searching for resources. Please try again."}</div>`;
+        answerContainer.classList.remove("d-none");
+      } finally {
+        submitButton.disabled = false;
+        submitButton.value = "Find Resources";
+      }
     });
 </script>
-{% endblock %} 
+{% endblock %}
