@@ -70,15 +70,15 @@
             <div class="mb-4">
               <details class="mt-3">
                 <summary class="text-muted small">
-                  Advanced: Use your own API key
+                  Required: OpenAI API Key
                 </summary>
                 <div class="mt-2">
                   <label class="form-label small">OpenAI API Key</label>
                   {{ form.openai_key(class="form-control", type="password",
                   placeholder="sk-...", autocomplete="off") }}
                   <div class="form-text">
-                    For privacy, you can use your own key. Leave empty to use
-                    our demo key.
+                    Please enter your OpenAI API key to use this tool. You can get one from 
+                    <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI's website</a>.
                   </div>
                 </div>
               </details>
