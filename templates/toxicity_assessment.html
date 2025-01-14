@@ -1,0 +1,183 @@
+{% extends "base.html" %} {% block content %}
+<div class="container py-5">
+  <!-- Introduction -->
+  <div class="row mb-5">
+    <div class="col-lg-8 mx-auto text-center">
+      <h1 class="display-5 mb-3">Assess Toxicity Exposure</h1>
+      <p class="lead text-muted mb-4">
+        Our AI environmental health specialist will help evaluate your potential exposure to environmental toxins through a series of questions. Get personalized recommendations for home testing and next steps.
+      </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <!-- Example Concerns -->
+      <div class="mb-4">
+        <h6 class="text-muted mb-3">Common concerns we can help assess:</h6>
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >I'm worried about mold in my basement after recent flooding</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >There's a strong chemical smell in my new apartment</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >I live near an industrial area and am concerned about air quality</a
+          >
+          <a
+            href="#"
+            class="badge bg-light text-dark p-2 text-decoration-none example-query"
+            >My water has started tasting metallic recently</a
+          >
+        </div>
+      </div>
+
+      <!-- Main Chat Interface -->
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <!-- Message Thread -->
+          <div id="message-thread" class="mb-4" style="max-height: 400px; overflow-y: auto;">
+            <!-- Messages will be inserted here -->
+          </div>
+
+          <!-- Input Form -->
+          <form id="toxicity-form" method="POST">
+            {{ form.hidden_tag() }}
+
+            <!-- Message Input -->
+            <div class="mb-4">
+              <label for="user_message" class="form-label h5"
+                >Your Response</label
+              >
+              <textarea
+                name="user_message"
+                id="user_message"
+                rows="3"
+                class="form-control form-control-lg"
+                placeholder="Type your message here..."
+                required
+              ></textarea>
+            </div>
+
+            <!-- Optional API Key (Collapsed by Default) -->
+            <div class="mb-4">
+              <details class="mt-3">
+                <summary class="text-muted small">
+                  Advanced: Use your own API key
+                </summary>
+                <div class="mt-2">
+                  <label class="form-label small">OpenAI API Key</label>
+                  {{ form.openai_key(class="form-control", type="password",
+                  placeholder="sk-...", autocomplete="off") }}
+                  <div class="form-text">
+                    For privacy, you can use your own key. Leave empty to use
+                    our demo key.
+                  </div>
+                </div>
+              </details>
+            </div>
+
+            {{ form.submit(class="btn btn-primary btn-lg w-100", value="Send Message") }}
+          </form>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="mt-4 text-center text-muted">
+        <small>
+          This tool provides general guidance only and should not be considered medical advice. Always consult with environmental health professionals for serious concerns.
+        </small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Message history storage
+  let messageHistory = [];
+
+  // Function to add a message to the thread
+  function addMessageToThread(content, isUser) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `p-3 mb-3 rounded ${isUser ? 'bg-primary text-white ms-4' : 'bg-light me-4'}`;
+    messageDiv.innerHTML = content.replace(/\n/g, '<br>');
+    document.getElementById('message-thread').appendChild(messageDiv);
+    
+    // Scroll to bottom
+    const thread = document.getElementById('message-thread');
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  // Make example queries clickable
+  document.querySelectorAll(".example-query").forEach((link) => {
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const textarea = document.getElementById("user_message");
+      textarea.value = e.target.textContent;
+      textarea.focus();
+    });
+  });
+
+  // Ensure API key is always hidden
+  const apiKeyInput = document.querySelector('input[name="openai_key"]');
+  apiKeyInput.setAttribute("type", "password");
+
+  document
+    .getElementById("toxicity-form")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const form = e.target;
+      const formData = new FormData(form);
+      const submitButton = form.querySelector('input[type="submit"]');
+      const userMessage = formData.get('user_message');
+
+      // Add user message to thread
+      addMessageToThread(userMessage, true);
+      messageHistory.push({"role": "user", "content": userMessage});
+
+      // Show loading state
+      submitButton.disabled = true;
+      submitButton.value = "Sending...";
+
+      try {
+        // Add message history to the request
+        formData.append('message_history', JSON.stringify(messageHistory));
+
+        const response = await fetch('{{ url_for("toxicity_assessment") }}', {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.error || "An error occurred while processing your request",
+          );
+        }
+
+        // Add AI response to thread and history
+        addMessageToThread(data.answer, false);
+        messageHistory.push({"role": "assistant", "content": data.answer});
+
+        // Clear input
+        form.reset();
+        
+      } catch (error) {
+        console.error("Error:", error);
+        addMessageToThread(`<div class="text-danger">Error: ${error.message || "An error occurred during the assessment. Please try again."}</div>`, false);
+      } finally {
+        submitButton.disabled = false;
+        submitButton.value = "Send Message";
+      }
+    });
+</script>
+{% endblock %} 

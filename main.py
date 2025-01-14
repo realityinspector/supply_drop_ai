@@ -114,6 +114,7 @@ def extract_and_clean_pdf_text(pdf_file):
 # Load prompts
 RESOURCE_FINDER_PROMPT = load_json_prompt('resource_finder_prompt.json', "You are a helpful assistant trained on wildfire relief resources for Los Angeles.")
 REJECTION_SIMULATION_PROMPT = load_json_prompt('rejection_simulation_prompt.json', "You are a harsh simulator that rejects applications for insurance, FEMA, or grants for hurricane and wildfire recovery.")
+TOXICITY_ASSESSMENT_PROMPT = load_json_prompt('toxicity_assessment_prompt.json', "You are an expert environmental health specialist helping assess toxicity exposure risks.")
 
 # ------------------------------------------------------------------------
 # ROUTES
@@ -267,8 +268,59 @@ def legal():
     """
     return render_template("legal.html")
 
+@app.route("/toxicity-assessment", methods=['GET', 'POST'])
+def toxicity_assessment():
+    """
+    Toxicity Assessment tool for evaluating environmental exposure risks
+    """
+    form = OpenAIKeyForm()
+
+    if request.method == 'GET':
+        return render_template("toxicity_assessment.html", form=form)
+
+    if form.validate_on_submit():
+        user_message = request.form.get('user_message', '').strip()
+        message_history = request.form.get('message_history', '[]')
+        
+        if not user_message:
+            return jsonify({"error": "Please enter your response"}), 400
+
+        try:
+            # Parse message history
+            message_history = json.loads(message_history)
+            
+            # Initialize OpenAI client with form API key
+            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
+            client = OpenAI(api_key=api_key)
+
+            # Construct messages array with system prompt and history
+            messages = [
+                {"role": "system", "content": TOXICITY_ASSESSMENT_PROMPT}
+            ]
+            messages.extend(message_history)
+
+            # Make API call using new client format
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=messages,
+                temperature=0.7
+            )
+
+            # Extract and return the response
+            chatbot_answer = response.choices[0].message.content
+            return jsonify({"answer": chatbot_answer})
+
+        except json.JSONDecodeError:
+            app.logger.error("Failed to parse message history")
+            return jsonify({"error": "Invalid message history format"}), 400
+        except Exception as e:
+            app.logger.error(f"OpenAI API Error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+
+    return render_template("toxicity_assessment.html", form=form)
+
 # ------------------------------------------------------------------------
 # RUN THE APP
 # ------------------------------------------------------------------------
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)
