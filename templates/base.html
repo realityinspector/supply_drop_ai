@@ -23,23 +23,50 @@
     .site-header {
       background: #000;
       padding: 1rem 0;
+      position: relative;
+      z-index: 1000;
+      width: 100%;
     }
 
     .header-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      min-height: 60px;
     }
 
     .logo-area {
       display: flex;
       align-items: center;
+      position: relative;
+      z-index: 1001;
+      height: 60px;
+      width: 220px;
     }
 
     .logo-img {
       display: block;
       max-width: 220px;
       height: auto;
+      position: relative;
+      z-index: 1002;
+    }
+
+    main {
+      flex: 1 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Debug any potential overlays */
+    body > * {
+      position: relative;
+    }
+
+    /* Ensure footer stays at bottom */
+    footer {
+      position: relative;
+      z-index: 1;
     }
   </style>
 </head>
@@ -53,7 +80,9 @@
             <img src="{{ url_for('static', filename='logo.png') }}" 
                  alt="Supply Drop Logo" 
                  class="logo-img"
-                 onerror="this.onerror=null; this.src='{{ url_for('static', filename='fallback-logo.png') }}';"
+                 width="220"
+                 height="60"
+                 data-fallback="{{ url_for('static', filename='fallback-logo.png') }}"
             />
           </a>
         </div>
@@ -61,8 +90,57 @@
     </div>
   </header>
 
-  {% block content %}{% endblock %}
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-dark text-white py-5 mt-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <h3 class="h5">About Supply Drop</h3>
+          <p>An open source project to help communities prepare for and recover from disasters.</p>
+        </div>
+        <div class="col-md-4">
+          <h3 class="h5">Important Links</h3>
+          <ul class="list-unstyled">
+            <li><a href="{{ url_for('legal') }}" class="text-white">Terms & Privacy</a></li>
+            <li><a href="https://github.com/yourusername/supply-drop" class="text-white">GitHub</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h3 class="h5">Disclaimers</h3>
+          <p>This is an experimental prototype. Not for emergency use. Always follow official guidance in emergencies.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Debug logo loading and handle fallback
+    document.addEventListener('DOMContentLoaded', function() {
+      const logo = document.querySelector('.logo-img');
+      if (logo) {
+        console.log('Logo element found');
+        
+        // Handle image error with fallback
+        logo.addEventListener('error', function() {
+          console.log('Logo failed to load, trying fallback');
+          if (this.dataset.fallback) {
+            this.src = this.dataset.fallback;
+          }
+        });
+
+        // Log successful load
+        logo.addEventListener('load', function() {
+          console.log('Logo loaded successfully');
+        });
+      } else {
+        console.log('Logo element not found');
+      }
+    });
+  </script>
 </body>
 </html>

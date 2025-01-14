@@ -1,4 +1,6 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %}
+
+{% block content %}
 <!-- Hero Section -->
 <section class="bg-dark text-white py-5">
   <div class="container text-center">
@@ -161,27 +163,4 @@
     </div>
   </div>
 </section>
-
-<!-- Footer -->
-<footer class="bg-dark text-white py-5 mt-5">
-  <div class="container">
-    <div class="row g-4">
-      <div class="col-md-4">
-        <h3 class="h5">About Supply Drop</h3>
-        <p>An open source project to help communities prepare for and recover from disasters.</p>
-      </div>
-      <div class="col-md-4">
-        <h3 class="h5">Important Links</h3>
-        <ul class="list-unstyled">
-          <li><a href="{{ url_for('legal') }}" class="text-white">Terms & Privacy</a></li>
-          <li><a href="https://github.com/yourusername/supply-drop" class="text-white">GitHub</a></li>
-        </ul>
-      </div>
-      <div class="col-md-4">
-        <h3 class="h5">Disclaimers</h3>
-        <p>This is an experimental prototype. Not for emergency use. Always follow official guidance in emergencies.</p>
-      </div>
-    </div>
-  </div>
-</footer>
 {% endblock %}
