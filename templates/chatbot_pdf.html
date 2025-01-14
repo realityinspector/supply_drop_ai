@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>PDF-based Chatbot</h2>
+<p>Upload up to two PDF files and type your message. The chatbot will use the PDF text plus a system prompt from <code>system_prompt.pdf</code>. Your data is not stored.</p>
+
+<form method="POST" action="" enctype="multipart/form-data">
+  {{ form.csrf_token }}
+  <div class="mb-3">
+    {{ form.openai_key.label }}<br>
+    {{ form.openai_key(class="form-control") }}
+  </div>
+
+  <div class="mb-3">
+    <label for="pdf_files">PDF Files (up to 2):</label>
+    <input type="file" name="pdf_files" accept=".pdf" multiple class="form-control">
+  </div>
+
+  <div class="mb-3">
+    <label for="user_message">Your Message</label>
+    <textarea id="user_message" name="user_message" class="form-control" rows="3"></textarea>
+  </div>
+
+  {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% if chatbot_answer %}
+<hr>
+<h4>Chatbot Response:</h4>
+<div class="alert alert-secondary">{{ chatbot_answer }}</div>
+{% endif %}
+{% endblock %}
