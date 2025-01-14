@@ -41,11 +41,11 @@ def allowed_file(filename):
 # SIMPLE FORM FOR OPENAI KEY (using Flask-WTF)
 # ------------------------------------------------------------------------
 class OpenAIKeyForm(FlaskForm):
-    openai_key = StringField('OpenAI API Key', validators=[Optional()], default=os.getenv('OPENAI_API_KEY'))
+    openai_key = StringField('OpenAI API Key', validators=[Optional()])
     submit = SubmitField('Use Key')
 
 class RejectionSimulationForm(FlaskForm):
-    openai_key = StringField('OpenAI API Key', validators=[Optional()], default=os.getenv('OPENAI_API_KEY'))
+    openai_key = StringField('OpenAI API Key', validators=[Optional()])
     user_message = TextAreaField('Describe Your Situation', validators=[DataRequired()])
     documents = MultipleFileField('Supporting Documents')
     submit = SubmitField('Start Simulation')
@@ -143,8 +143,13 @@ def resource_finder():
             return jsonify({"error": "Please enter a question"}), 400
 
         try:
-            # Initialize OpenAI client with form API key
-            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
+            # Get API key from form or system, with proper error handling
+            api_key = form.openai_key.data
+            if not api_key:
+                api_key = os.getenv('OPENAI_API_KEY')
+                if not api_key:
+                    return jsonify({"error": "No API key provided. Please enter your OpenAI API key."}), 400
+            
             client = OpenAI(api_key=api_key)
 
             # Make API call using new client format
@@ -237,8 +242,13 @@ def rejection_simulation():
         logger.debug(json.dumps(openai_payload, indent=2))
 
         try:
-            # Initialize OpenAI client with form API key
-            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
+            # Get API key from form or system, with proper error handling
+            api_key = form.openai_key.data
+            if not api_key:
+                api_key = os.getenv('OPENAI_API_KEY')
+                if not api_key:
+                    return jsonify({"error": "No API key provided. Please enter your OpenAI API key."}), 400
+            
             client = OpenAI(api_key=api_key)
 
             response = client.chat.completions.create(
@@ -287,13 +297,18 @@ def toxicity_assessment():
             return jsonify({"error": "Please enter your response"}), 400
 
         try:
+            # Get API key from form or system, with proper error handling
+            api_key = form.openai_key.data
+            if not api_key:
+                api_key = os.getenv('OPENAI_API_KEY')
+                if not api_key:
+                    return jsonify({"error": "No API key provided. Please enter your OpenAI API key."}), 400
+            
+            client = OpenAI(api_key=api_key)
+
             # Parse message history
             message_history = json.loads(message_history)
             
-            # Initialize OpenAI client with form API key
-            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
-            client = OpenAI(api_key=api_key)
-
             # Construct messages array with system prompt and history
             messages = [
                 {"role": "system", "content": TOXICITY_ASSESSMENT_PROMPT}
@@ -338,13 +353,18 @@ def recovery_capital():
             return jsonify({"error": "Please enter your response"}), 400
 
         try:
+            # Get API key from form or system, with proper error handling
+            api_key = form.openai_key.data
+            if not api_key:
+                api_key = os.getenv('OPENAI_API_KEY')
+                if not api_key:
+                    return jsonify({"error": "No API key provided. Please enter your OpenAI API key."}), 400
+            
+            client = OpenAI(api_key=api_key)
+
             # Parse message history
             message_history = json.loads(message_history)
             
-            # Initialize OpenAI client with form API key
-            api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
-            client = OpenAI(api_key=api_key)
-
             # Construct messages array with system prompt and history
             messages = [
                 {"role": "system", "content": RECOVERY_CAPITAL_PROMPT}
