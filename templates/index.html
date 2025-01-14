@@ -1,44 +1,43 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SupplyDropAI.com - Disaster Preparedness Tool</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-black text-white">
-    <div class="container mx-auto px-4 py-8">
-        <header class="text-center mb-12">
-            <h1 class="text-4xl font-bold mb-4">SupplyDropAI.com</h1>
-            <p class="text-xl">Your Disaster Preparedness Companion</p>
-        </header>
+{% extends "base.html" %}
 
-        <main>
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Our Mission</h2>
-                <p class="mb-4">SupplyDropAI.com is an open-source initiative designed to help you prepare for and navigate through disasters. Just like a video game supply drop that arrives when you need it most, we're here to provide critical resources and information in times of crisis.</p>
-            </section>
+{% block content %}
+<h1 class="page-title">Emergency Preparedness Assistant</h1>
+<p class="page-subtitle">Your AI-powered companion for emergency planning and response.</p>
 
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Our Tools</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-white text-black p-6 rounded-lg">
-                        <h3 class="text-xl font-bold mb-2">Resource Finder</h3>
-                        <p class="mb-4">Trained on a comprehensive database of wildfire relief resources for Los Angeles, our Resource Finder helps you locate the assistance you need quickly and efficiently.</p>
-                        <a href="/resource-finder" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">Find Resources</a>
-                    </div>
-                    <div class="bg-white text-black p-6 rounded-lg">
-                        <h3 class="text-xl font-bold mb-2">Rejection Simulation</h3>
-                        <p class="mb-4">Prepare for the worst-case scenarios with our Rejection Simulation tool. It helps you anticipate and overcome potential obstacles in securing insurance, FEMA assistance, or grants for hurricane and wildfire recovery.</p>
-                        <a href="/rejection-simulation" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">Start Simulation</a>
-                    </div>
+<!-- Tools Section -->
+<section class="mt-5">
+    <div class="row g-4">
+        <!-- Resource Finder -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h4 mb-3">Resource Finder</h3>
+                    <p class="text-muted mb-4">Quickly locate emergency resources and assistance in your area.</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2">✓ Real-time resource availability</li>
+                        <li class="mb-2">✓ Location-based recommendations</li>
+                        <li class="mb-2">✓ Direct contact information</li>
+                    </ul>
+                    <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">Find Resources</a>
                 </div>
-            </section>
-        </main>
-
-        <footer class="text-center mt-12">
-            <p>&copy; 2023 SupplyDropAI.com - An Open Source Disaster Preparedness Initiative</p>
-        </footer>
+            </div>
+        </div>
+        
+        <!-- Rejection Simulation -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h4 mb-3">Rejection Simulation</h3>
+                    <p class="text-muted mb-4">Practice and prepare for assistance application processes.</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2">✓ FEMA application scenarios</li>
+                        <li class="mb-2">✓ Insurance claim simulations</li>
+                        <li class="mb-2">✓ Document requirement guides</li>
+                    </ul>
+                    <a href="{{ url_for('rejection_simulation') }}" class="btn btn-primary">Start Simulation</a>
+                </div>
+            </div>
+        </div>
     </div>
-</body>
-</html>
+</section>
+{% endblock %}
