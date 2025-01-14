@@ -7,8 +7,9 @@ from flask_wtf.csrf import CSRFProtect
 from wtforms import StringField, SubmitField, TextAreaField, MultipleFileField
 from wtforms.validators import DataRequired, Optional
 from werkzeug.utils import secure_filename
-from PyPDF2 import PdfFileReader
+from pypdf import PdfReader
 import bleach
+import logging
 
 # ------------------------------------------------------------------------
 # SETUP FLASK APP & CONFIG
@@ -17,6 +18,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'YOUR-DEFAULT-SECRET-KEY')
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', './uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit for uploads
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Create uploads directory if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -62,15 +67,49 @@ def extract_and_clean_pdf_text(pdf_file):
     Returns tuple of (success, text/error_message)
     """
     try:
-        reader = PdfFileReader(pdf_file)
-        extracted_text = ""
-        for page in range(reader.getNumPages()):
-            text = reader.getPage(page).extractText() or ""
-            text = bleach.clean(text)  # sanitize text
-            extracted_text += text + "\n"
-        return True, extracted_text.strip()
+        logger.debug(f"Starting to process PDF file: {pdf_file.filename}")
+
+        # Save the file temporarily to handle streaming issues
+        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(pdf_file.filename))
+        pdf_file.save(temp_path)
+
+        logger.debug(f"Saved temp file to: {temp_path}")
+
+        # Open the saved file using updated PyPDF2 API
+        try:
+            with open(temp_path, 'rb') as file:
+                from PyPDF2 import PdfReader  # Updated import
+                reader = PdfReader(file)
+                extracted_text = ""
+
+                logger.debug(f"PDF has {len(reader.pages)} pages")
+
+                for page in reader.pages:
+                    text = page.extract_text() or ""  # Updated method name
+                    text = bleach.clean(text)  # sanitize text
+                    extracted_text += text + "\n"
+                    logger.debug(f"Extracted page text length: {len(text)} characters")
+
+                logger.debug(f"Total extracted text length: {len(extracted_text)}")
+                if len(extracted_text.strip()) == 0:
+                    logger.warning("Warning: Extracted text is empty")
+                    return False, "No text could be extracted from the PDF"
+
+                return True, extracted_text.strip()
+        except Exception as e:
+            logger.error(f"PDF reading error: {str(e)}")
+            return False, f"Error reading PDF: {str(e)}"
     except Exception as e:
+        logger.error(f"Error processing PDF {pdf_file.filename}: {str(e)}")
         return False, f"Error processing {pdf_file.filename}: {str(e)}"
+    finally:
+        # Ensure temp file is cleaned up even if there's an error
+        if 'temp_path' in locals() and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+                logger.debug(f"Cleaned up temp file: {temp_path}")
+            except Exception as e:
+                logger.error(f"Error cleaning up temp file: {str(e)}")
 
 # Load prompts
 RESOURCE_FINDER_PROMPT = load_json_prompt('resource_finder_prompt.json', "You are a helpful assistant trained on wildfire relief resources for Los Angeles.")
@@ -145,22 +184,29 @@ def rejection_simulation():
         uploaded_files = request.files.getlist('documents')
         documents_context = []
 
+        logger.debug(f"Received {len(uploaded_files)} files")
+
         if len(uploaded_files) > 5:
             return jsonify({"error": "Maximum 5 files allowed."}), 400
 
         # Process each uploaded file
         for pdf_file in uploaded_files:
             if pdf_file and pdf_file.filename:
+                logger.debug(f"Processing file: {pdf_file.filename}")
+
                 if not allowed_file(pdf_file.filename):
                     return jsonify({"error": f"Invalid file type: {pdf_file.filename}. Only PDF files are allowed."}), 400
 
                 success, result = extract_and_clean_pdf_text(pdf_file)
                 if success:
+                    logger.debug(f"Successfully extracted text from {pdf_file.filename}, length: {len(result)}")
+                    logger.debug(f"First 500 characters of extracted text: {result[:500]}")
                     documents_context.append({
                         "filename": pdf_file.filename,
                         "content": result
                     })
                 else:
+                    logger.error(f"Failed to extract text: {result}")
                     return jsonify({"error": result}), 400
 
         # Construct a detailed prompt that clearly separates the application details and documents
@@ -171,17 +217,30 @@ def rejection_simulation():
         if documents_context:
             full_message += "Submitted Documents:\n"
             for doc in documents_context:
+                logger.debug(f"Adding document to prompt: {doc['filename']}, content length: {len(doc['content'])}")
                 full_message += f"\n--- Document: {doc['filename']} ---\n{doc['content']}\n"
         else:
             full_message += "\nNote: No supporting documents were provided with this application."
+
+        # Log the complete payload being sent to OpenAI
+        openai_payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
+                {"role": "user", "content": full_message}
+            ],
+            "temperature": 0.7
+        }
+        logger.debug("Complete OpenAI payload:")
+        logger.debug(json.dumps(openai_payload, indent=2))
 
         try:
             # Initialize OpenAI client with form API key
             api_key = form.openai_key.data or os.getenv('OPENAI_API_KEY')
             client = OpenAI(api_key=api_key)
-            
+
             response = client.chat.completions.create(
-                model="gpt-4",  # Fixed model name
+                model="gpt-4o",
                 messages=[
                     {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
                     {"role": "user", "content": full_message}
@@ -189,14 +248,17 @@ def rejection_simulation():
                 temperature=0.7
             )
             simulation_result = response.choices[0].message.content
+            logger.debug("Received OpenAI response:")
+            logger.debug(simulation_result)
             return jsonify({"answer": simulation_result})
-            
+
         except Exception as e:
-            app.logger.error(f"OpenAI API Error: {str(e)}")
+            logger.error(f"OpenAI API Error: {str(e)}")
             return jsonify({"error": str(e)}), 500
 
     # If form validation failed
     return jsonify({"error": "Invalid form submission"}), 400
+    
 
 @app.route("/legal")
 def legal():
