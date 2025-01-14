@@ -23,6 +23,12 @@
       >
         Try Rejection Simulation
       </a>
+      <a
+        href="{{ url_for('toxicity_assessment') }}"
+        class="btn btn-outline-light btn-lg"
+      >
+        Assess Toxicity
+      </a>
     </div>
     <a
       href="https://github.com/realityinspector/supply_drop_ai"
@@ -42,11 +48,18 @@
       SEEN BY THE DEVELOPERS.
     </p>
     <hr />
-    <p class="mb-0">
+    <p class="mb-2">
       This is an open source experimental prototype. It is not intended to
       provide official advice or replace professional assistance. Do not rely on
       these tools for emergency response. Always contact official emergency
       services and follow local authority guidance.
+    </p>
+    <hr />
+    <p class="mb-0">
+      <strong>Data Privacy:</strong> We do not store or retain any user data or conversations. 
+      Each session is temporary and data is not persisted. You can verify this by reviewing our 
+      <a href="https://github.com/realityinspector/supply_drop_ai" class="alert-link">open source code</a> 
+      which shows that no database or storage systems are used for user data.
     </p>
   </div>
 </div>
@@ -70,7 +83,7 @@
           </ul>
      
           <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">
-            Find Resources
+            Find Resources 
           </a>
         </div>
       </div>
@@ -101,13 +114,38 @@
         </div>
       </div>
     </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="card-title">Assess Toxicity</h3>
+          <p class="card-text">
+            Work with our AI environmental health specialist to evaluate potential
+            toxicity exposure in your environment. Get personalized recommendations
+            for home testing kits and next steps based on your specific situation.
+          </p>
+          <ul class="list-unstyled mb-4">
+            <li>✓ Interactive environmental assessment</li>
+            <li>✓ Personalized testing recommendations</li>
+            <li>✓ Home testing kit guidance</li>
+            <li>✓ Safety precautions and next steps</li>
+          </ul>
+          <a
+            href="{{ url_for('toxicity_assessment') }}"
+            class="btn btn-primary"
+          >
+            Start Assessment
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- Coming Soon Section -->
 <section class="bg-light py-5">
   <div class="container">
-    <h2 class="mb-4">Coming Soon</h2>
+    <h2 class="mb-4">Future Plans</h2>
     <div class="row g-4">
       <div class="col-md-6">
         <div class="card">
