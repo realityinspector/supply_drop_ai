@@ -5,7 +5,7 @@
     <div class="col-lg-8 mx-auto text-center">
       <h1 class="display-5 mb-3">Find Recovery Capital</h1>
       <p class="lead text-muted mb-4">
-        Our AI financial advisor will help you identify and navigate potential sources of disaster recovery funding, whether you're an individual, small business, or non-profit organization.
+        Search our database of disaster recovery funding sources and programs. Get information about available resources, requirements, and application processes for individuals, small businesses, and non-profit organizations.
       </p>
     </div>
   </div>
@@ -54,14 +54,14 @@
             <!-- Message Input -->
             <div class="mb-4">
               <label for="user_message" class="form-label h5"
-                >Your Response</label
+                >Describe your situation</label
               >
               <textarea
                 name="user_message"
                 id="user_message"
                 rows="3"
                 class="form-control form-control-lg"
-                placeholder="Type your message here..."
+                placeholder="Tell us about your needs and we'll help find relevant funding programs..."
                 required
               ></textarea>
             </div>
@@ -84,7 +84,7 @@
               </details>
             </div>
 
-            {{ form.submit(class="btn btn-primary btn-lg w-100", value="Send Message") }}
+            {{ form.submit(class="btn btn-primary btn-lg w-100", value="Search Programs") }}
           </form>
         </div>
       </div>
@@ -92,7 +92,7 @@
       <!-- Disclaimer -->
       <div class="mt-4 text-center text-muted">
         <small>
-          This tool provides general guidance only and should not be considered financial advice. 
+          This tool provides information about available programs and resources. It is not financial advice. 
           Funding availability, eligibility requirements, and application processes may vary. 
           Always verify information with the funding organizations directly.
         </small>

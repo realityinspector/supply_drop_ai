@@ -1,48 +1,108 @@
-# SupplyDropAI.com
+# Emergency Preparedness Assistant
 
-SupplyDropAI.com is an open-source disaster preparedness tool designed to help you prepare for and navigate through disasters. Just like a video game supply drop that arrives when you need it most, we're here to provide critical resources and information in times of crisis.
+An open-source Flask application providing AI-powered tools for disaster preparedness and recovery. Built in response to Hurricane Helene's impact on Western North Carolina and Los Angeles fires.
 
-## Features
+## Core Features
 
-1. **Resource Finder**: Trained on a comprehensive database of wildfire relief resources for Los Angeles, our Resource Finder helps you locate the assistance you need quickly and efficiently.
+- **Resource Finder**: OpenAI-powered chatbot for locating emergency resources and community support
+- **Rejection Simulation**: AI system that simulates application reviews for insurance claims, FEMA assistance, and grants
+- **Toxicity Assessment**: Environmental health analysis tool for evaluating potential exposure risks
+- **Recovery Capital Finder**: Financial advisor bot for discovering disaster recovery funding sources
 
-2. **Rejection Simulation**: Prepare for the worst-case scenarios with our Rejection Simulation tool. It helps you anticipate and overcome potential obstacles in securing insurance, FEMA assistance, or grants for hurricane and wildfire recovery.
+## Technical Stack
 
-## Getting Started
+- **Backend**: Flask (Python 3.9+)
+- **Frontend**: Bootstrap 5 with vanilla JavaScript
+- **AI Integration**: OpenAI GPT-4 API
+- **PDF Processing**: PyPDF (for document analysis)
+- **Security**: Flask-WTF for CSRF protection
+- **Input Sanitization**: Bleach for text sanitization
 
-1. Clone this repository
-2. Install the required dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Set up your OpenAI API key as an environment variable:
-   ```
-   export OPENAI_API_KEY='your-api-key-here'
-   ```
-4. Run the Flask application:
-   ```
-   python main.py
-   ```
+## Development Setup
 
-## Usage
+1. Clone the repository:
+```bash
+git clone https://github.com/realityinspector/supply_drop_ai.git
+cd supply_drop_ai
+```
 
-1. Open your web browser and navigate to `http://localhost:5000`
-2. Choose either the Resource Finder or Rejection Simulation tool
-3. Enter your query or application details
-4. Review the AI-generated response
+2. Set up Python environment (using Poetry):
+```bash
+poetry install
+```
+
+3. Configure environment variables:
+```bash
+FLASK_SECRET_KEY=your_secret_key
+OPENAI_API_KEY=your_openai_key
+UPLOAD_FOLDER=./uploads
+```
+
+4. Run the development server:
+```bash
+poetry run flask run
+```
+
+## Project Structure
+
+- `main.py`: Core Flask application and route handlers
+- `templates/`: Jinja2 templates for web interface
+  - `base.html`: Base template with common layout
+  - `index.html`: Landing page
+  - Various feature-specific templates
+- `static/`: Static assets (CSS, images, videos)
+- `*_prompt.json`: System prompts for different AI features
 
 ## Contributing
 
-We welcome contributions to SupplyDropAI.com! Please feel free to submit issues, feature requests, or pull requests.
+### Architecture Decisions
+
+1. **Stateless Design**: No database/persistent storage to minimize security concerns
+2. **File Processing**: Temporary file storage with secure cleanup
+3. **AI Integration**: Modular prompt system for easy updates
+4. **Security First**: CSRF protection, input sanitization, and file upload restrictions
+
+### Development Guidelines
+
+1. **Code Style**
+   - Follow PEP 8
+   - Use type hints
+   - Document functions and complex logic
+   - Keep functions focused and modular
+
+2. **Security Practices**
+   - Sanitize all user inputs
+   - Validate file uploads
+   - Use secure file operations
+   - Never commit API keys
+
+3. **AI Integration**
+   - Keep prompts in separate JSON files
+   - Test with various input scenarios
+   - Handle API failures gracefully
+   - Monitor token usage
+
+4. **Testing**
+   - Write unit tests for new features
+   - Test edge cases in file processing
+   - Verify prompt effectiveness
+   - Check security measures
+
+### Current Development Focus
+
+1. Video damage analysis integration
+2. Resource API development
+3. Community event coordination features
+4. Performance optimization for file processing
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[License information needed]
 
-## Acknowledgments
+## Security Notice
 
-- OpenAI for providing the GPT model used in this project
-- Flask for the web framework
-- Tailwind CSS for the styling
+This is a prototype system. While we implement security best practices, contributors should be aware that this system processes sensitive disaster-related information. Always review security implications of changes.
 
-Stay prepared, stay safe!
+## Contact
+
+[Contact information needed]

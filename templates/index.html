@@ -1,250 +1,290 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="bg-dark text-white py-5">
-  <div class="container-fluid px-4">
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-10 text-center">
-        <h1 class="display-4 mb-4">Emergency Preparedness Assistant</h1>
-        <p class="lead mb-4">
-          An open-source initiative to empower communities during disasters
-        </p>
-        <p class="mb-4">
-          Inspired by Hurricane Helene's impact on Western North Carolina and the
-          Los Angeles fires, we're building tools to help communities respond to
-          disasters together.
-        </p>
-        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-          <div class="d-grid gap-2 col-12 col-sm-auto">
-            <a href="{{ url_for('resource_finder') }}" class="btn btn-primary btn-lg">
-              Find Resources
-            </a>
-          </div>
-          <div class="d-grid gap-2 col-12 col-sm-auto">
-            <a
-              href="{{ url_for('rejection_simulation') }}"
-              class="btn btn-outline-light btn-lg"
-            >
-              Try Rejection Simulation
-            </a>
-          </div>
-          <div class="d-grid gap-2 col-12 col-sm-auto">
-            <a
-              href="{{ url_for('toxicity_assessment') }}"
-              class="btn btn-outline-light btn-lg"
-            >
-              Assess Toxicity
-            </a>
-          </div>
-          <div class="d-grid gap-2 col-12 col-sm-auto">
-            <a
-              href="{{ url_for('recovery_capital') }}"
-              class="btn btn-outline-light btn-lg"
-            >
-              Find Recovery Capital
-            </a>
-          </div>
+<div class="container-fluid">
+    <div class="section">
+        <!-- Hero Section -->
+        <div class="bg-dark text-white py-5">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8 text-center">
+                    <h1 class="display-4 mb-4">Emergency Preparedness Assistant</h1>
+                    <p class="lead mb-4 readable-content mx-auto">
+                        An open-source initiative to empower communities during disasters
+                    </p>
+                    <p class="mb-4 readable-content mx-auto">
+                        Inspired by Hurricane Helene's impact on Western North Carolina and the
+                        Los Angeles fires, we're building tools to help communities respond to
+                        disasters together.
+                    </p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-3 d-sm-flex justify-content-center mb-4">
+                        <a href="{{ url_for('resource_finder') }}" class="btn btn-primary btn-lg px-4">
+                            Find Resources
+                        </a>
+                        <a href="{{ url_for('rejection_simulation') }}" class="btn btn-outline-light btn-lg px-4">
+                            Try Rejection Simulation
+                        </a>
+                        <a href="{{ url_for('toxicity_assessment') }}" class="btn btn-outline-light btn-lg px-4">
+                            Assess Toxicity
+                        </a>
+                        <a href="{{ url_for('recovery_capital') }}" class="btn btn-outline-light btn-lg px-4">
+                            Find Recovery Capital
+                        </a>
+                    </div>
+                    
+                    <div class="d-grid gap-2 col-lg-6 mx-auto">
+                        <a href="https://github.com/realityinspector/supply_drop_ai" 
+                           class="btn btn-primary btn-lg">
+                            Join us on GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="d-grid gap-2 col-12 col-sm-6 mx-auto">
-          <a
-            href="https://github.com/realityinspector/supply_drop_ai"
-            class="btn btn-primary btn-lg"
-          >
-            Join us on GitHub
-          </a>
-        </div>
-      </div>
     </div>
-  </div>
-</section>
-
-<!-- Important Disclaimer -->
-<div class="container-fluid px-4">
-  <div class="row justify-content-center my-5">
-    <div class="col-12 col-lg-10">
-      <div class="alert alert-danger">
-        <h4 class="alert-heading">⚠️ Important Notice</h4>
-        <p class="mb-2">
-          THIS IS A DEMO SITE NOT MEANT FOR REAL USE. ANY DATA YOU SHARE WILL BE
-          SEEN BY THE DEVELOPERS.
-        </p>
-        <hr />
-        <p class="mb-2">
-          This is an open source experimental prototype. It is not intended to
-          provide official advice or replace professional assistance. Do not rely on
-          these tools for emergency response. Always contact official emergency
-          services and follow local authority guidance.
-        </p>
-        <hr />
-        <p class="mb-0">
-          <strong>Data Privacy:</strong> We do not store or retain any user data or conversations. 
-          Each session is temporary and data is not persisted. You can verify this by reviewing our 
-          <a href="https://github.com/realityinspector/supply_drop_ai" class="alert-link">open source code</a> 
-          which shows that no database or storage systems are used for user data.
-        </p>
-      </div>
-    </div>
-  </div>
 </div>
 
-<!-- Tools Section -->
-<section class="container-fluid px-4 py-5">
-  <div class="row justify-content-center g-4">
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-body">
-          <h3 class="card-title">Resource Finder</h3>
-          <p class="card-text">
-            Quickly locate emergency resources using an OpenAI chatbot that has
-            access to public data sources, including community resources like
-            Kidness Hub (not affiliated) in Los Angeles.
-          </p>
-          <ul class="list-unstyled mb-4">
-            <li>✓ Real-time resource availability</li>
-            <li>✓ Location-based recommendations</li>
-            <li>✓ Direct contact information</li>
-          </ul>
-     
-          <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">
-            Find Resources 
-          </a>
+<!-- Important Disclaimer -->
+<section class="section py-5">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-8">
+                <div class="alert alert-danger">
+                    <h2 class="h4 alert-heading">⚠️ Important Notice</h2>
+                    <p class="mb-2">
+                        THIS IS A DEMO SITE NOT MEANT FOR REAL USE. ANY DATA YOU SHARE WILL BE
+                        PROCESSED BY OPENAI'S SERVERS.
+                    </p>
+                    <hr>
+                    <p class="mb-2">
+                        This is an open source experimental prototype. It is not intended to
+                        provide official advice or replace professional assistance. Do not rely on
+                        these tools for emergency response. Always contact official emergency
+                        services and follow local authority guidance.
+                    </p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Data Privacy:</strong> While we do not store any data on our servers, all conversations and documents 
+                        are processed through OpenAI's GPT-4 API. This means your inputs are sent to OpenAI's servers for processing. 
+                        Each session is temporary, and we do not persist any data. You can verify our no-storage policy by reviewing our 
+                        <a href="https://github.com/realityinspector/supply_drop_ai" class="alert-link">open source code</a>.
+                    </p>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-body">
-          <h3 class="card-title">Rejection Simulation</h3>
-          <p class="card-text">
-            Practice application processes with our AI reviewer that simulates
-            real-world scenarios and common rejection patterns for claims,
-            forms, and things like grant and loan applications. Sharpen your
-            proposals and avoid painful mistakes.
-          </p>
-          <ul class="list-unstyled mb-4">
-            <li>✓ AI-powered application review simulation</li>
-            <li>✓ Insurance claim rejection patterns</li>
-            <li>✓ Assistance application scenarios</li>
-            <li>✓ Grant application feedback</li>
-          </ul>
-          <a
-            href="{{ url_for('rejection_simulation') }}"
-            class="btn btn-primary"
-          >
-            Start Simulation
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-body">
-          <h3 class="card-title">Assess Toxicity</h3>
-          <p class="card-text">
-            Work with our AI environmental health specialist to evaluate potential
-            toxicity exposure in your environment. Get personalized recommendations
-            for home testing kits and next steps based on your specific situation.
-          </p>
-          <ul class="list-unstyled mb-4">
-            <li>✓ Interactive environmental assessment</li>
-            <li>✓ Personalized testing recommendations</li>
-            <li>✓ Home testing kit guidance</li>
-            <li>✓ Safety precautions and next steps</li>
-          </ul>
-          <a
-            href="{{ url_for('toxicity_assessment') }}"
-            class="btn btn-primary"
-          >
-            Start Assessment
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-6">
-      <div class="card h-100">
-        <div class="card-body">
-          <h3 class="card-title">Find Recovery Capital</h3>
-          <p class="card-text">
-            Connect with our AI financial advisor to discover and navigate disaster recovery funding sources for individuals, small businesses, and non-profits. Get personalized guidance on grants, loans, and assistance programs.
-          </p>
-          <ul class="list-unstyled mb-4">
-            <li>✓ Federal and state program guidance</li>
-            <li>✓ Private funding source matching</li>
-            <li>✓ Application requirement details</li>
-            <li>✓ Documentation checklists</li>
-          </ul>
-          <a
-            href="{{ url_for('recovery_capital') }}"
-            class="btn btn-primary"
-          >
-            Start Search
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
 </section>
 
-<!-- Coming Soon Section -->
-<section class="bg-light py-5">
-  <div class="container-fluid px-4">
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-10">
-        <h2 class="mb-4">Future Plans</h2>
-        <div class="row g-4">
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <h3 class="h5">Video Damage Analysis</h3>
-                <p class="mb-0">
-                  AI-powered assessment of disaster damage from video footage
-                </p>
-              </div>
+<!-- Tools Section -->
+<section class="section py-5">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <div class="component-grid">
+                    <!-- Resource Finder Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title h4">Resource Finder</h3>
+                            <p class="card-text">
+                                Quickly locate emergency resources using an OpenAI chatbot that has
+                                access to public data sources, including community resources like
+                                Kidness Hub (not affiliated) in Los Angeles.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li>✓ Real-time resource availability</li>
+                                <li>✓ Location-based recommendations</li>
+                                <li>✓ Direct contact information</li>
+                            </ul>
+                            <a href="{{ url_for('resource_finder') }}" class="btn btn-primary">
+                                Find Resources 
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Rejection Simulation Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title h4">Rejection Simulation</h3>
+                            <p class="card-text">
+                                Practice application processes with our AI reviewer that simulates
+                                real-world scenarios and common rejection patterns for claims,
+                                forms, and things like grant and loan applications.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li>✓ AI-powered application review simulation</li>
+                                <li>✓ Insurance claim rejection patterns</li>
+                                <li>✓ Assistance application scenarios</li>
+                                <li>✓ Grant application feedback</li>
+                            </ul>
+                            <a href="{{ url_for('rejection_simulation') }}" class="btn btn-primary">
+                                Start Simulation
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Toxicity Assessment Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title h4">Assess Toxicity</h3>
+                            <p class="card-text">
+                                Work with our AI environmental health specialist to evaluate potential
+                                toxicity exposure in your environment. Get personalized recommendations
+                                for home testing kits and next steps.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li>✓ Interactive environmental assessment</li>
+                                <li>✓ Personalized testing recommendations</li>
+                                <li>✓ Home testing kit guidance</li>
+                                <li>✓ Safety precautions and next steps</li>
+                            </ul>
+                            <a href="{{ url_for('toxicity_assessment') }}" class="btn btn-primary">
+                                Start Assessment
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Recovery Capital Card -->
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="card-title h4">Find Recovery Capital</h3>
+                            <p class="card-text">
+                                Search and navigate available disaster recovery funding sources and programs for individuals, 
+                                small businesses, and non-profits using our resource database.
+                            </p>
+                            <ul class="list-unstyled mb-4">
+                                <li>✓ Federal and state program listings</li>
+                                <li>✓ Available funding source database</li>
+                                <li>✓ Program requirements and deadlines</li>
+                                <li>✓ Application document checklists</li>
+                            </ul>
+                            <a href="{{ url_for('recovery_capital') }}" class="btn btn-primary">
+                                Search Programs
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <h3 class="h5">Resource API</h3>
-                <p class="mb-0">
-                  Developer-friendly API for chat and resources fine-tuned for
-                  disaster recovery
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <h3 class="h5">Supply Drop Saturdays</h3>
-                <p class="mb-0">
-                  In-person pop-up events with preparedness supplies
-                </p>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="card">
-              <div class="card-body">
-                <h3 class="h5">Family Business Events</h3>
-                <p class="mb-0">
-                  Partner with
-                  <a href="https://AllOneThing.xyz" target="_blank"
-                    >AllOneThing.xyz</a
-                  >
-                  to provide childcare while parents do recovery forms, grants, and
-                  resource allocation and small business management and recovery
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
-  </div>
+</section>
+
+<!-- Future Plans Section -->
+<section class="section bg-light py-5">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <h2 class="mb-4">Future Plans</h2>
+                <div class="component-grid">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="h5">Video Damage Analysis</h3>
+                            <p class="mb-0">
+                                AI-powered assessment of disaster damage from video footage
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="h5">Resource API</h3>
+                            <p class="mb-0">
+                                Developer-friendly API for chat and resources fine-tuned for
+                                disaster recovery
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="h5">Supply Drop Saturdays</h3>
+                            <p class="mb-0">
+                                In-person pop-up events with preparedness supplies
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h3 class="h5">Family Business Events</h3>
+                            <p class="mb-0">
+                                Partner with
+                                <a href="https://AllOneThing.xyz" target="_blank">AllOneThing.xyz</a>
+                                to provide childcare while parents do recovery forms, grants, and
+                                resource allocation and small business management and recovery
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section class="section py-5">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-12">
+                <h2 class="mb-4">How It Works</h2>
+                
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h3 class="h4 mb-3">System Architecture</h3>
+                        <p class="readable-content">
+                            Our application operates through a series of specialized AI interactions, each designed to address specific aspects of disaster preparedness. Here's an overview of the core components:
+                        </p>
+                        
+                        <div class="component-grid mt-4">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h4 class="h5">1. Specialized Instructions</h4>
+                                    <p>
+                                        Each tool operates with a specific set of instructions that define its expertise and behavior. For example, the Resource Finder has detailed knowledge about emergency services and community resources. These instruction sets are transparent and available in our GitHub repository.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h4 class="h5">2. Processing System</h4>
+                                    <p>
+                                        When you interact with a tool, your input is processed by OpenAI's GPT-4 model alongside our specialized instructions. This combination ensures responses are both relevant to disaster preparedness and tailored to your specific situation.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h4 class="h5">3. Data Handling</h4>
+                                    <p>
+                                        Our system processes all information in real-time without persistent storage. This means your conversations and uploaded documents are handled temporarily and securely, then completely removed when you end your session.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h4 class="h5">4. Transparent Development</h4>
+                                    <p>
+                                        The entire application is open source and publicly available on 
+                                        <a href="https://github.com/realityinspector/supply_drop_ai" target="_blank">GitHub</a>. 
+                                        This includes our codebase, instruction sets, and system architecture, allowing for community review and contribution.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h4 class="alert-heading h5">💡 Design Philosophy</h4>
+                    <p class="mb-0">
+                        Our approach prioritizes transparency and community ownership. By implementing a stateless architecture and open-source development model, we've created a system that can be independently verified, enhanced, and replicated by other communities and organizations working in disaster preparedness.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 {% endblock %}
