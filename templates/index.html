@@ -29,6 +29,12 @@
       >
         Assess Toxicity
       </a>
+      <a
+        href="{{ url_for('recovery_capital') }}"
+        class="btn btn-outline-light btn-lg"
+      >
+        Find Recovery Capital
+      </a>
     </div>
     <a
       href="https://github.com/realityinspector/supply_drop_ai"
@@ -135,6 +141,29 @@
             class="btn btn-primary"
           >
             Start Assessment
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card h-100">
+        <div class="card-body">
+          <h3 class="card-title">Find Recovery Capital</h3>
+          <p class="card-text">
+            Connect with our AI financial advisor to discover and navigate disaster recovery funding sources for individuals, small businesses, and non-profits. Get personalized guidance on grants, loans, and assistance programs.
+          </p>
+          <ul class="list-unstyled mb-4">
+            <li>✓ Federal and state program guidance</li>
+            <li>✓ Private funding source matching</li>
+            <li>✓ Application requirement details</li>
+            <li>✓ Documentation checklists</li>
+          </ul>
+          <a
+            href="{{ url_for('recovery_capital') }}"
+            class="btn btn-primary"
+          >
+            Start Search
           </a>
         </div>
       </div>
