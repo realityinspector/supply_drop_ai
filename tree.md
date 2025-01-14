@@ -6,7 +6,6 @@
 ├── README.md
 ├── abbot.py
 ├── app.py
-├── auth.py
 ├── chat.py
 ├── chatgptdocs.md
 ├── database.py
@@ -20,6 +19,7 @@
 ├── migrations/
 │   ├── env.py
 │   ├── versions/
+│   │   ├── 974c2c48d4de_add_file_path_to_document_model.py
 │   │   ├── f2ad1fb7dd31_initial_migration.py
 ├── models.py
 ├── package-lock.json
@@ -27,6 +27,8 @@
 ├── profile.py
 ├── prompt_abbot.json
 ├── prompts.json
+├── rejection.py
+├── resource_finder.py
 ├── static/
 │   └── [1 image files]
 │   ├── css/
@@ -54,6 +56,7 @@
 │   │   ├── first_time_user.html
 │   │   ├── list.html
 │   ├── checklists.html
+│   ├── dashboard.html
 │   ├── documents/
 │   │   ├── list.html
 │   │   ├── view.html
@@ -72,11 +75,13 @@
 │   │   ├── step2_claim.html
 │   │   ├── step3_analysis.html
 │   │   ├── wizard.html
-│   ├── login.html
 │   ├── profile/
 │   │   ├── reports.html
 │   │   ├── view.html
-│   ├── signup.html
+│   ├── rejection/
+│   │   ├── wizard.html
+│   ├── resources/
+│   │   ├── chat.html
 │   ├── video_player.html
 ├── tree.md
 ├── treehouse.py
