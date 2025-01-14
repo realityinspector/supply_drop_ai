@@ -17,4 +17,6 @@ dependencies = [
     "docx>=0.2.4",
     "flask-migrate>=4.0.7",
     "flask-wtf>=1.2.2",
+    "auth>=0.5.3",
+    "chardet>=5.2.0",
 ]
