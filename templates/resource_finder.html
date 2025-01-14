@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Finder - SupplyDropAI.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">Resource Finder</h1>
+            <p class="text-xl">Find wildfire relief resources in Los Angeles</p>
+        </header>
+
+        <main>
+            <!-- Console Output Area -->
+            <div id="console" class="mb-8 font-mono text-sm bg-gray-900 p-4 rounded-lg h-48 overflow-y-auto">
+                <div id="console-content">
+                    <div class="text-green-400">> Resource Finder Console Ready</div>
+                </div>
+            </div>
+
+            <form id="resource-form" method="POST" class="mb-8">
+                {{ form.hidden_tag() }}
+                <div class="mb-4">
+                    {{ form.openai_key.label(class="block text-sm font-bold mb-2") }}
+                    {{ form.openai_key(class="w-full p-2 border rounded text-black") }}
+                </div>
+                <div class="mb-4">
+                    <label for="user_message" class="block text-sm font-bold mb-2">Your Question</label>
+                    <textarea name="user_message" id="user_message" rows="4" class="w-full p-2 border rounded text-black" required></textarea>
+                </div>
+                {{ form.submit(class="bg-white text-black px-4 py-2 rounded hover:bg-gray-200") }}
+            </form>
+
+            <div id="answer-container" class="bg-white text-black p-6 rounded-lg hidden">
+                <h2 class="text-2xl font-bold mb-4">Resource Information</h2>
+                <p id="answer-content"></p>
+            </div>
+        </main>
+
+        <footer class="text-center mt-12">
+            <a href="/" class="text-white hover:underline">Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        function logToConsole(message, type = 'info') {
+            const consoleContent = document.getElementById('console-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': 'text-blue-400',
+                'error': 'text-red-400',
+                'success': 'text-green-400',
+                'process': 'text-yellow-400'
+            };
+            const colorClass = colors[type] || colors.info;
+            
+            consoleContent.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            consoleContent.scrollTop = consoleContent.scrollHeight;
+        }
+
+        document.getElementById('resource-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            logToConsole('Starting resource query...', 'process');
+            
+            try {
+                logToConsole('Sending request to server...', 'process');
+                const response = await fetch('/resource-finder', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.text();
+                logToConsole('Response received successfully', 'success');
+
+                // Update the answer container
+                const answerContainer = document.getElementById('answer-container');
+                const answerContent = document.getElementById('answer-content');
+                answerContent.innerHTML = result;
+                answerContainer.classList.remove('hidden');
+                
+                logToConsole('Answer displayed successfully', 'success');
+            } catch (error) {
+                logToConsole(`Error: ${error.message}`, 'error');
+                const answerContainer = document.getElementById('answer-container');
+                answerContainer.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html> 

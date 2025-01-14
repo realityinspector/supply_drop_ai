@@ -1,31 +1,44 @@
-{% extends "base.html" %}
-{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SupplyDropAI.com - Disaster Preparedness Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">SupplyDropAI.com</h1>
+            <p class="text-xl">Your Disaster Preparedness Companion</p>
+        </header>
 
-<div class="text-center">
-  <h1>Welcome to My Flask Chatbot App</h1>
-  <p class="lead">Choose one of our chatbots below.</p>
-</div>
+        <main>
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">Our Mission</h2>
+                <p class="mb-4">SupplyDropAI.com is an open-source initiative designed to help you prepare for and navigate through disasters. Just like a video game supply drop that arrives when you need it most, we're here to provide critical resources and information in times of crisis.</p>
+            </section>
 
-<hr>
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">Our Tools</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white text-black p-6 rounded-lg">
+                        <h3 class="text-xl font-bold mb-2">Resource Finder</h3>
+                        <p class="mb-4">Trained on a comprehensive database of wildfire relief resources for Los Angeles, our Resource Finder helps you locate the assistance you need quickly and efficiently.</p>
+                        <a href="/resource-finder" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">Find Resources</a>
+                    </div>
+                    <div class="bg-white text-black p-6 rounded-lg">
+                        <h3 class="text-xl font-bold mb-2">Rejection Simulation</h3>
+                        <p class="mb-4">Prepare for the worst-case scenarios with our Rejection Simulation tool. It helps you anticipate and overcome potential obstacles in securing insurance, FEMA assistance, or grants for hurricane and wildfire recovery.</p>
+                        <a href="/rejection-simulation" class="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">Start Simulation</a>
+                    </div>
+                </div>
+            </section>
+        </main>
 
-<div class="row">
-  <div class="col-md-6 mb-4">
-    <h3>Simple Chatbot</h3>
-    <p>
-      This chatbot uses a system prompt from a JSON file and does not store your conversations.
-      Enter your own OpenAI API key and start chatting immediately.
-    </p>
-    <a href="{{ url_for('chatbot') }}" class="btn btn-primary">Go to Simple Chatbot</a>
-  </div>
-
-  <div class="col-md-6 mb-4">
-    <h3>PDF-based Chatbot</h3>
-    <p>
-      This chatbot allows you to upload up to two PDF files and uses the text from them as part
-      of the prompt. The system prompt also comes from a PDF file. 
-    </p>
-    <a href="{{ url_for('chatbot_pdf') }}" class="btn btn-info">Go to PDF-based Chatbot</a>
-  </div>
-</div>
-
-{% endblock %}
+        <footer class="text-center mt-12">
+            <p>&copy; 2023 SupplyDropAI.com - An Open Source Disaster Preparedness Initiative</p>
+        </footer>
+    </div>
+</body>
+</html>
