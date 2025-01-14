@@ -3,76 +3,94 @@
 {% block content %}
 <!-- Hero Section -->
 <section class="bg-dark text-white py-5">
-  <div class="container text-center">
-    <h1 class="display-4 mb-4">Emergency Preparedness Assistant</h1>
-    <p class="lead mb-4">
-      An open-source initiative to empower communities during disasters
-    </p>
-    <p class="mb-4">
-      Inspired by Hurricane Helene's impact on Western North Carolina and the
-      Los Angeles fires, we're building tools to help communities respond to
-      disasters together.
-    </p>
-    <div class="d-flex justify-content-center gap-3 mb-4">
-      <a href="{{ url_for('resource_finder') }}" class="btn btn-primary btn-lg">
-        Find Resources
-      </a>
-      <a
-        href="{{ url_for('rejection_simulation') }}"
-        class="btn btn-outline-light btn-lg"
-      >
-        Try Rejection Simulation
-      </a>
-      <a
-        href="{{ url_for('toxicity_assessment') }}"
-        class="btn btn-outline-light btn-lg"
-      >
-        Assess Toxicity
-      </a>
-      <a
-        href="{{ url_for('recovery_capital') }}"
-        class="btn btn-outline-light btn-lg"
-      >
-        Find Recovery Capital
-      </a>
+  <div class="container-fluid px-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 text-center">
+        <h1 class="display-4 mb-4">Emergency Preparedness Assistant</h1>
+        <p class="lead mb-4">
+          An open-source initiative to empower communities during disasters
+        </p>
+        <p class="mb-4">
+          Inspired by Hurricane Helene's impact on Western North Carolina and the
+          Los Angeles fires, we're building tools to help communities respond to
+          disasters together.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+          <div class="d-grid gap-2 col-12 col-sm-auto">
+            <a href="{{ url_for('resource_finder') }}" class="btn btn-primary btn-lg">
+              Find Resources
+            </a>
+          </div>
+          <div class="d-grid gap-2 col-12 col-sm-auto">
+            <a
+              href="{{ url_for('rejection_simulation') }}"
+              class="btn btn-outline-light btn-lg"
+            >
+              Try Rejection Simulation
+            </a>
+          </div>
+          <div class="d-grid gap-2 col-12 col-sm-auto">
+            <a
+              href="{{ url_for('toxicity_assessment') }}"
+              class="btn btn-outline-light btn-lg"
+            >
+              Assess Toxicity
+            </a>
+          </div>
+          <div class="d-grid gap-2 col-12 col-sm-auto">
+            <a
+              href="{{ url_for('recovery_capital') }}"
+              class="btn btn-outline-light btn-lg"
+            >
+              Find Recovery Capital
+            </a>
+          </div>
+        </div>
+        <div class="d-grid gap-2 col-12 col-sm-6 mx-auto">
+          <a
+            href="https://github.com/realityinspector/supply_drop_ai"
+            class="btn btn-primary btn-lg"
+          >
+            Join us on GitHub
+          </a>
+        </div>
+      </div>
     </div>
-    <a
-      href="https://github.com/realityinspector/supply_drop_ai"
-      class="btn btn-primary btn-lg"
-    >
-      Join us on GitHub
-    </a>
   </div>
 </section>
 
 <!-- Important Disclaimer -->
-<div class="container my-5">
-  <div class="alert alert-danger">
-    <h4 class="alert-heading">⚠️ Important Notice</h4>
-    <p class="mb-2">
-      THIS IS A DEMO SITE NOT MEANT FOR REAL USE. ANY DATA YOU SHARE WILL BE
-      SEEN BY THE DEVELOPERS.
-    </p>
-    <hr />
-    <p class="mb-2">
-      This is an open source experimental prototype. It is not intended to
-      provide official advice or replace professional assistance. Do not rely on
-      these tools for emergency response. Always contact official emergency
-      services and follow local authority guidance.
-    </p>
-    <hr />
-    <p class="mb-0">
-      <strong>Data Privacy:</strong> We do not store or retain any user data or conversations. 
-      Each session is temporary and data is not persisted. You can verify this by reviewing our 
-      <a href="https://github.com/realityinspector/supply_drop_ai" class="alert-link">open source code</a> 
-      which shows that no database or storage systems are used for user data.
-    </p>
+<div class="container-fluid px-4">
+  <div class="row justify-content-center my-5">
+    <div class="col-12 col-lg-10">
+      <div class="alert alert-danger">
+        <h4 class="alert-heading">⚠️ Important Notice</h4>
+        <p class="mb-2">
+          THIS IS A DEMO SITE NOT MEANT FOR REAL USE. ANY DATA YOU SHARE WILL BE
+          SEEN BY THE DEVELOPERS.
+        </p>
+        <hr />
+        <p class="mb-2">
+          This is an open source experimental prototype. It is not intended to
+          provide official advice or replace professional assistance. Do not rely on
+          these tools for emergency response. Always contact official emergency
+          services and follow local authority guidance.
+        </p>
+        <hr />
+        <p class="mb-0">
+          <strong>Data Privacy:</strong> We do not store or retain any user data or conversations. 
+          Each session is temporary and data is not persisted. You can verify this by reviewing our 
+          <a href="https://github.com/realityinspector/supply_drop_ai" class="alert-link">open source code</a> 
+          which shows that no database or storage systems are used for user data.
+        </p>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Tools Section -->
-<section class="container py-5">
-  <div class="row g-4">
+<section class="container-fluid px-4 py-5">
+  <div class="row justify-content-center g-4">
     <div class="col-md-6">
       <div class="card h-100">
         <div class="card-body">
@@ -173,52 +191,56 @@
 
 <!-- Coming Soon Section -->
 <section class="bg-light py-5">
-  <div class="container">
-    <h2 class="mb-4">Future Plans</h2>
-    <div class="row g-4">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h3 class="h5">Video Damage Analysis</h3>
-            <p class="mb-0">
-              AI-powered assessment of disaster damage from video footage
-            </p>
+  <div class="container-fluid px-4">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10">
+        <h2 class="mb-4">Future Plans</h2>
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h3 class="h5">Video Damage Analysis</h3>
+                <p class="mb-0">
+                  AI-powered assessment of disaster damage from video footage
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h3 class="h5">Resource API</h3>
-            <p class="mb-0">
-              Developer-friendly API for chat and resources fine-tuned for
-              disaster recovery
-            </p>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h3 class="h5">Resource API</h3>
+                <p class="mb-0">
+                  Developer-friendly API for chat and resources fine-tuned for
+                  disaster recovery
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h3 class="h5">Supply Drop Saturdays</h3>
-            <p class="mb-0">
-              In-person pop-up events with preparedness supplies
-            </p>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h3 class="h5">Supply Drop Saturdays</h3>
+                <p class="mb-0">
+                  In-person pop-up events with preparedness supplies
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h3 class="h5">Family Business Events</h3>
-            <p class="mb-0">
-              Partner with
-              <a href="https://AllOneThing.xyz" target="_blank"
-                >AllOneThing.xyz</a
-              >
-              to provide childcare while parents do recovery forms, grants, and
-              resource allocation and small business management and recovery
-            </p>
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-body">
+                <h3 class="h5">Family Business Events</h3>
+                <p class="mb-0">
+                  Partner with
+                  <a href="https://AllOneThing.xyz" target="_blank"
+                    >AllOneThing.xyz</a
+                  >
+                  to provide childcare while parents do recovery forms, grants, and
+                  resource allocation and small business management and recovery
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
