@@ -1,146 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supply Drop</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
-  <style>
-    :root {
-      --primary-blue: #4169E1;
-      --background-gray: #F5F5F5;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--background-gray);
-      color: #333;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Emergency Preparedness Assistant{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Base Layout Variables */
+        :root {
+            --max-content-width: 1200px;
+            --container-padding: 1rem;
+            --section-spacing: 4rem;
+            --component-spacing: 2rem;
+            --card-spacing: 1.5rem;
+        }
 
-    .site-header {
-      background: #000;
-      padding: 1rem 0;
-      position: relative;
-      z-index: 1000;
-      width: 100%;
-    }
+        /* Essential Layout Structure */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
 
-    .header-container {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      min-height: 60px;
-    }
+        .site-wrapper {
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
 
-    .logo-area {
-      display: flex;
-      align-items: center;
-      position: relative;
-      z-index: 1001;
-      height: 60px;
-      width: 220px;
-    }
+        .main-content {
+            flex: 1 0 auto;
+            padding: var(--container-padding) 0;
+        }
 
-    .logo-img {
-      display: block;
-      max-width: 220px;
-      height: auto;
-      position: relative;
-      z-index: 1002;
-    }
+        /* Container Control */
+        .container-fluid {
+            max-width: var(--max-content-width);
+            margin: 0 auto;
+            padding-left: var(--container-padding);
+            padding-right: var(--container-padding);
+            width: 100%;
+        }
 
-    main {
-      flex: 1 0 auto;
-      position: relative;
-      z-index: 1;
-    }
+        /* Header Styles */
+        .site-header {
+            background-color: #212529;
+            padding: 1rem 0;
+        }
 
-    /* Debug any potential overlays */
-    body > * {
-      position: relative;
-    }
+        .logo-area {
+            width: 220px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+        }
 
-    /* Ensure footer stays at bottom */
-    footer {
-      position: relative;
-      z-index: 1;
-    }
-  </style>
+        .logo-img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Component Layout */
+        .component-grid {
+            display: grid;
+            gap: var(--component-spacing);
+            grid-template-columns: 1fr;
+            margin-bottom: var(--section-spacing);
+        }
+
+        @media (min-width: 768px) {
+            .component-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Card Styles */
+        .card {
+            height: 100%;
+            padding: var(--card-spacing);
+            margin-bottom: var(--component-spacing);
+        }
+
+        /* Footer Styles */
+        .site-footer {
+            background-color: #212529;
+            color: white;
+            padding: 10rem 0;
+            margin-top: auto;
+        }
+
+        .site-footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+        }
+
+        .site-footer a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+
+        .site-footer p {
+            margin-bottom: 0;
+            opacity: 0.8;
+        }
+
+        .site-footer h3 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* Utility Classes */
+        .mb-section {
+            margin-bottom: var(--section-spacing);
+        }
+
+        .mb-component {
+            margin-bottom: var(--component-spacing);
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-  <!-- Header -->
-  <header class="site-header">
-    <div class="container">
-      <div class="header-container">
-        <div class="logo-area">
-          <a href="{{ url_for('index') }}">
-            <img src="{{ url_for('static', filename='logo.png') }}" 
-                 alt="Supply Drop Logo" 
-                 class="logo-img"
-                 width="220"
-                 height="60"
-                 data-fallback="{{ url_for('static', filename='fallback-logo.png') }}"
-            />
-          </a>
-        </div>
-      </div>
+    <div class="site-wrapper">
+        <header class="site-header text-white">
+            <div class="container-fluid">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="logo-area">
+                        <a href="{{ url_for('index') }}">
+                            <img src="{{ url_for('static', filename='logo.png') }}" 
+                                 alt="Supply Drop Logo" 
+                                 class="logo-img"
+                                 width="220"
+                                 height="60"
+                                 data-fallback="{{ url_for('static', filename='fallback-logo.png') }}"
+                            />
+                        </a>
+                    </div>
+                    <nav>
+                        {% block nav %}
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-light me-2">Home</a>
+                        <a href="https://github.com/realityinspector/supply_drop_ai" 
+                           class="btn btn-primary" 
+                           target="_blank">GitHub</a>
+                        {% endblock %}
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="site-footer">
+            <div class="container-fluid">
+                <div class="row gy-4">
+                    <div class="col-md-4">
+                        <h3>About Supply Drop</h3>
+                        <p>An open source project to help communities prepare for and recover from disasters.</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Important Links</h3>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><a href="{{ url_for('legal') }}">Terms & Privacy</a></li>
+                            <li><a href="https://github.com/realityinspector/supply_drop_ai">GitHub</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Disclaimers</h3>
+                        <p>This is an experimental prototype. Not for emergency use. Always follow official guidance in emergencies.</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
     </div>
-  </header>
 
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-dark text-white py-5 mt-5">
-    <div class="container">
-      <div class="row g-4">
-        <div class="col-md-4">
-          <h3 class="h5">About Supply Drop</h3>
-          <p>An open source project to help communities prepare for and recover from disasters.</p>
-        </div>
-        <div class="col-md-4">
-          <h3 class="h5">Important Links</h3>
-          <ul class="list-unstyled">
-            <li><a href="{{ url_for('legal') }}" class="text-white">Terms & Privacy</a></li>
-            <li><a href="https://github.com/realityinspector/supply_drop_ai" class="text-white">GitHub</a></li>
-          </ul>
-        </div>
-        <div class="col-md-4">
-          <h3 class="h5">Disclaimers</h3>
-          <p>This is an experimental prototype. Not for emergency use. Always follow official guidance in emergencies.</p>
-        </div>
-      </div>
-    </div>
-  </footer>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // Debug logo loading and handle fallback
-    document.addEventListener('DOMContentLoaded', function() {
-      const logo = document.querySelector('.logo-img');
-      if (logo) {
-        console.log('Logo element found');
-        
-        // Handle image error with fallback
-        logo.addEventListener('error', function() {
-          console.log('Logo failed to load, trying fallback');
-          if (this.dataset.fallback) {
-            this.src = this.dataset.fallback;
-          }
-        });
-
-        // Log successful load
-        logo.addEventListener('load', function() {
-          console.log('Logo loaded successfully');
-        });
-      } else {
-        console.log('Logo element not found');
-      }
-    });
-  </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

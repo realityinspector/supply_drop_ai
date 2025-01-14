@@ -4,32 +4,29 @@
 
 ```
 ├── README.md
-├── chat.py
-├── document_processor.py
 ├── main.py
-├── migrations/
-│   ├── env.py
-│   ├── versions/
-│   │   ├── 974c2c48d4de_add_file_path_to_document_model.py
-│   │   ├── f2ad1fb7dd31_initial_migration.py
 ├── package-lock.json
 ├── package.json
-├── prompt_abbot.json
-├── rejection.py
-├── resource_finder.py
+├── recovery_capital_prompt.json
+├── rejection_simulation_prompt.json
+├── resource-finder.js
+├── resource_finder_prompt.json
+├── server.js
 ├── static/
 │   └── [1 image files]
 │   ├── css/
 │   ├── video/
+├── system_prompt.json
 ├── templates/
 │   ├── base.html
-│   ├── dashboard.html
-│   ├── documents.html
-│   ├── rejection/
-│   │   ├── wizard.html
-│   ├── resources/
-│   │   ├── chat.html
-│   ├── video_player.html
+│   ├── index.html
+│   ├── legal.html
+│   ├── recovery_capital.html
+│   ├── rejection_simulation.html
+│   ├── resource_finder.html
+│   ├── toxicity_assessment.html
+├── test.py
+├── toxicity_assessment_prompt.json
 ├── tree.md
 ├── treehouse.py
 ├── uploads/
