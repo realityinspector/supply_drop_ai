@@ -210,6 +210,12 @@ wheels = [
 ]
 
 [[package]]
+name = "extensions"
+version = "0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/99/562284766394d99c8559385940e703bc4e984ccbc00dc909cffb3c0bba00/extensions-0.4.tar.gz", hash = "sha256:02a6c12973f527fd09adad71792a8d70dfc94cb49fca67ceb201a4dfa5b18099", size = 16116 }
+
+[[package]]
 name = "falcon"
 version = "4.0.2"
 source = { registry = "https://pypi.org/simple" }
@@ -859,6 +865,7 @@ dependencies = [
     { name = "chardet" },
     { name = "docx" },
     { name = "email-validator" },
+    { name = "extensions" },
     { name = "flask" },
     { name = "flask-login" },
     { name = "flask-migrate" },
@@ -878,6 +885,7 @@ requires-dist = [
     { name = "chardet", specifier = ">=5.2.0" },
     { name = "docx", specifier = ">=0.2.4" },
     { name = "email-validator", specifier = ">=2.2.0" },
+    { name = "extensions", specifier = ">=0.4" },
     { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-login", specifier = ">=0.6.3" },
     { name = "flask-migrate", specifier = ">=4.0.7" },

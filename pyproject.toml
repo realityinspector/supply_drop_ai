@@ -19,4 +19,5 @@ dependencies = [
     "flask-wtf>=1.2.2",
     "auth>=0.5.3",
     "chardet>=5.2.0",
+    "extensions>=0.4",
 ]
