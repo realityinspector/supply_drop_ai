@@ -1,29 +1,36 @@
 import os
 import json
 from openai import OpenAI
-
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-import bleach
-from flask import (
-    Flask, render_template, request, redirect, url_for, session, flash
-)
+from flask import Flask, render_template, request, redirect, flash
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import CSRFProtect
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
-from PyPDF2 import PdfReader
 from werkzeug.utils import secure_filename
+from PyPDF2 import PdfFileReader
+import bleach
 
 # ------------------------------------------------------------------------
 # SETUP FLASK APP & CONFIG
 # ------------------------------------------------------------------------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', 'YOUR-DEFAULT-SECRET-KEY')
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', './uploads')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB limit for uploads
+
+# Create uploads directory if it doesn't exist
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Enable CSRF Protection
 csrf = CSRFProtect(app)
 
-# Allow up to two PDF files
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB just as an example
-app.config['UPLOAD_EXTENSIONS'] = ['.pdf']
+# Allowed file extensions
+ALLOWED_EXTENSIONS = {'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Configure OpenAI
 
 # ------------------------------------------------------------------------
 # SIMPLE FORM FOR OPENAI KEY (using Flask-WTF)
@@ -31,153 +38,153 @@ app.config['UPLOAD_EXTENSIONS'] = ['.pdf']
 class OpenAIKeyForm(FlaskForm):
     openai_key = StringField('OpenAI API Key', validators=[DataRequired()], default=os.getenv('OPENAI_API_KEY'))
     submit = SubmitField('Use Key')
+
 # ------------------------------------------------------------------------
-# READ SYSTEM PROMPT FROM JSON (for the first chatbot)
+# HELPER FUNCTIONS FOR LOADING PROMPTS AND PROCESSING FILES
 # ------------------------------------------------------------------------
-def load_system_prompt_from_json():
+def load_json_prompt(file_path, default_prompt):
     try:
-        with open('system_prompt.json', 'r', encoding='utf-8') as f:
+        with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-            return data.get('system_prompt', "You are a helpful assistant.")
+            return data.get('system_prompt', default_prompt)
     except FileNotFoundError:
-        return "You are a helpful assistant."
+        return default_prompt
 
-# ------------------------------------------------------------------------
-# READ SYSTEM PROMPT FROM PDF (for the PDF-based chatbot)
-# ------------------------------------------------------------------------
-def load_system_prompt_from_pdf():
-    try:
-        with open('system_prompt.pdf', 'rb') as f:
-            reader = PdfReader(f)
-            # Concatenate text from all pages
-            prompt_text = ""
-            for page in reader.pages:
-                page_text = page.extract_text() or ""
-                page_text = bleach.clean(page_text)  # sanitize text
-                prompt_text += page_text + "\n"
-            return prompt_text.strip()
-    except FileNotFoundError:
-        return "You are a helpful assistant (PDF)."
-
-# ------------------------------------------------------------------------
-# PDF TEXT EXTRACTION, CLEANING, AND SANITIZING
-# ------------------------------------------------------------------------
 def extract_and_clean_pdf_text(pdf_file):
     """
-    Extracts text from an uploaded PDF file, sanitizes it with bleach.
+    Extracts text from a PDF file and sanitizes it.
+    Returns tuple of (success, text/error_message)
     """
-    reader = PdfReader(pdf_file)
-    extracted_text = ""
-    for page in reader.pages:
-        text = page.extract_text() or ""
-        text = bleach.clean(text)  # basic sanitization
-        extracted_text += text + "\n"
-    return extracted_text.strip()
+    try:
+        reader = PdfFileReader(pdf_file)
+        extracted_text = ""
+        for page in range(reader.getNumPages()):
+            text = reader.getPage(page).extractText() or ""
+            text = bleach.clean(text)  # sanitize text
+            extracted_text += text + "\n"
+        return True, extracted_text.strip()
+    except Exception as e:
+        return False, f"Error processing {pdf_file.filename}: {str(e)}"
+
+# Load prompts
+RESOURCE_FINDER_PROMPT = load_json_prompt('resource_finder_prompt.json', "You are a helpful assistant trained on wildfire relief resources for Los Angeles.")
+REJECTION_SIMULATION_PROMPT = load_json_prompt('rejection_simulation_prompt.json', "You are a harsh simulator that rejects applications for insurance, FEMA, or grants for hurricane and wildfire recovery.")
 
 # ------------------------------------------------------------------------
-# ROUTE: LANDING PAGE
+# ROUTES
 # ------------------------------------------------------------------------
 @app.route("/", methods=['GET', 'POST'])
 def index():
     """
-    Landing page with hero content and links to:
-      - /chatbot
-      - /chatbot-pdf
+    Landing page
     """
     return render_template("index.html")
 
-# ------------------------------------------------------------------------
-# ROUTE: SIMPLE CHATBOT (no conversation storing)
-# ------------------------------------------------------------------------
-@app.route("/chatbot", methods=['GET', 'POST'])
-def chatbot():
+@app.route("/resource-finder", methods=['GET', 'POST'])
+def resource_finder():
     """
-    A simple page that uses:
-      - system_prompt from JSON
-      - OpenAI completions
-      - Does not store user conversation
+    Resource Finder tool for wildfire relief resources in Los Angeles
     """
     form = OpenAIKeyForm()
-    chatbot_answer = None
+
+    if request.method == 'GET':
+        return render_template("resource_finder.html", form=form)
 
     if form.validate_on_submit():
-        # Grab user input
-        user_message = request.form.get('user_message', '')
+        user_message = request.form.get('user_message', '').strip()
+        if not user_message:
+            return "Please enter a question", 400
 
-        # Build the system prompt
-        system_prompt = load_system_prompt_from_json()
+        try:
+            # Initialize OpenAI client with form API key
+            client = OpenAI(api_key=form.openai_key.data)
 
-        # Make the call to OpenAI
-        if user_message.strip():
-            response = client.chat.completions.create(model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.7)
+            # Make API call using new client format
+            response = client.chat.completions.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": RESOURCE_FINDER_PROMPT},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7
+            )
+
+            # Extract and return the response
             chatbot_answer = response.choices[0].message.content
+            return chatbot_answer
 
-    return render_template(
-        "chatbot.html",
-        form=form,
-        chatbot_answer=chatbot_answer
-    )
+        except Exception as e:
+            app.logger.error(f"OpenAI API Error: {str(e)}")
+            return f"An error occurred: {str(e)}", 500
 
-# ------------------------------------------------------------------------
-# ROUTE: PDF-BASED CHATBOT
-# ------------------------------------------------------------------------
-@app.route("/chatbot-pdf", methods=['GET', 'POST'])
-def chatbot_pdf():
+    return render_template("resource_finder.html", form=form)
+
+@app.route("/rejection-simulation", methods=['GET', 'POST'])
+def rejection_simulation():
     """
-    A chatbot page that:
-      - Accepts up to two PDFs
-      - Extracts & cleans PDF text
-      - Combines it into the user prompt
-      - Fetches system prompt from a PDF (system_prompt.pdf)
-      - Uses user's OpenAI API key
+    Rejection Simulation tool for insurance, FEMA, or grant applications
     """
     form = OpenAIKeyForm()
-    chatbot_answer = None
+    simulation_result = None
 
     if form.validate_on_submit():
-        # Set openai key
-        user_message = request.form.get('user_message', '')
+        user_message = request.form.get('user_message', '').strip()
 
-        # Load system prompt from the system_prompt.pdf
-        system_prompt = load_system_prompt_from_pdf()
-
-        # Process up to two PDFs
-        uploaded_files = request.files.getlist("pdf_files")
+        # Process uploaded files
+        uploaded_files = request.files.getlist('pdf_files')
         pdf_context = ""
-        for f in uploaded_files:
-            if f and f.filename.endswith('.pdf'):
-                filename = secure_filename(f.filename)
-                pdf_text = extract_and_clean_pdf_text(f)
-                pdf_context += pdf_text + "\n\n"
 
-        # Combine PDF text into the user prompt
-        # Example: "Here is some context from your PDFs:\n{pdf_context}\nUser message: {user_message}"
-        full_user_message = f"PDF Context:\n{pdf_context}\n\nUser Message: {user_message}"
+        if len(uploaded_files) > 5:
+            flash('Maximum 5 files allowed.', 'error')
+            return render_template(
+                "rejection_simulation.html",
+                form=form,
+                simulation_result=None
+            )
 
-        if user_message.strip() or pdf_context.strip():
-            response = client.chat.completions.create(model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": full_user_message}
-            ],
-            temperature=0.7)
-            chatbot_answer = response.choices[0].message.content
+        # Process each uploaded file
+        for pdf_file in uploaded_files:
+            if pdf_file and pdf_file.filename:
+                if not allowed_file(pdf_file.filename):
+                    flash(f'Invalid file type: {pdf_file.filename}. Only PDF files are allowed.', 'error')
+                    continue
+
+                success, result = extract_and_clean_pdf_text(pdf_file)
+                if success:
+                    pdf_context += f"\nContent from {pdf_file.filename}:\n{result}\n"
+                else:
+                    flash(result, 'error')
+
+        # Combine user message and PDF content
+        full_message = user_message
+        if pdf_context:
+            full_message = f"Application Details:\n{user_message}\n\nSupporting Documents:\n{pdf_context}"
+
+        if full_message:
+            try:
+                # Initialize OpenAI client with form API key
+                client = OpenAI(api_key=form.openai_key.data)
+                
+                response = client.chat.completions.create(
+                    model="gpt-4",
+                    messages=[
+                        {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
+                        {"role": "user", "content": full_message}
+                    ],
+                    temperature=0.7
+                )
+                simulation_result = response.choices[0].message.content
+            except Exception as e:
+                flash(f'Error processing request: {str(e)}', 'error')
 
     return render_template(
-        "chatbot_pdf.html",
+        "rejection_simulation.html",
         form=form,
-        chatbot_answer=chatbot_answer
+        simulation_result=simulation_result
     )
 
 # ------------------------------------------------------------------------
-# RUN THE APP (For Replit, often just `python main.py`)
+# RUN THE APP
 # ------------------------------------------------------------------------
 if __name__ == "__main__":
-    # On Replit, it often auto-detects. Otherwise:
-    # app.run(host='0.0.0.0', port=8000, debug=True)
     app.run(debug=True)

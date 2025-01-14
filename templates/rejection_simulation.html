@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejection Simulation - SupplyDropAI.com</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">Rejection Simulation</h1>
+            <p class="text-xl">Prepare for potential obstacles in securing assistance</p>
+        </header>
+
+        <main>
+            <form method="POST" class="mb-8" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+                <div class="mb-4">
+                    {{ form.openai_key.label(class="block text-sm font-bold mb-2") }}
+                    {{ form.openai_key(class="w-full p-2 border rounded text-black") }}
+                </div>
+                <div class="mb-4">
+                    <label for="user_message" class="block text-sm font-bold mb-2">Your Application Details</label>
+                    <textarea name="user_message" id="user_message" rows="4" class="w-full p-2 border rounded text-black" required></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Supporting Documents (PDF only, up to 5 files)</label>
+                    <div class="bg-white p-4 rounded">
+                        <input type="file" name="pdf_files" multiple accept=".pdf" class="text-black"
+                               onchange="validateFiles(this)" />
+                    </div>
+                    <p class="text-sm mt-2 text-gray-300">Maximum file size: 16MB per file</p>
+                </div>
+                {{ form.submit(class="bg-white text-black px-4 py-2 rounded hover:bg-gray-200") }}
+            </form>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded {% if category == 'error' %}bg-red-500{% else %}bg-green-500{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if simulation_result %}
+            <div class="bg-white text-black p-6 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Simulation Result</h2>
+                <p>{{ simulation_result | safe }}</p>
+            </div>
+            {% endif %}
+        </main>
+
+        <footer class="text-center mt-12">
+            <a href="/" class="text-white hover:underline">Back to Home</a>
+        </footer>
+    </div>
+
+    <script>
+        function validateFiles(input) {
+            const maxFiles = 5;
+            const maxSize = 16 * 1024 * 1024; // 16MB
+            const files = input.files;
+
+            if (files.length > maxFiles) {
+                alert(`Please select a maximum of ${maxFiles} files.`);
+                input.value = '';
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].size > maxSize) {
+                    alert(`File "${files[i].name}" exceeds the 16MB size limit.`);
+                    input.value = '';
+                    return;
+                }
+                if (!files[i].name.toLowerCase().endsWith('.pdf')) {
+                    alert(`File "${files[i].name}" is not a PDF file.`);
+                    input.value = '';
+                    return;
+                }
+            }
+        }
+    </script>
+</body>
+</html> 
