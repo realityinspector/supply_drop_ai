@@ -143,7 +143,7 @@ def rejection_simulation():
 
         # Process uploaded files
         uploaded_files = request.files.getlist('documents')
-        pdf_context = ""
+        documents_context = []
 
         if len(uploaded_files) > 5:
             return jsonify({"error": "Maximum 5 files allowed."}), 400
@@ -156,14 +156,24 @@ def rejection_simulation():
 
                 success, result = extract_and_clean_pdf_text(pdf_file)
                 if success:
-                    pdf_context += f"\nContent from {pdf_file.filename}:\n{result}\n"
+                    documents_context.append({
+                        "filename": pdf_file.filename,
+                        "content": result
+                    })
                 else:
                     return jsonify({"error": result}), 400
 
-        # Combine user message and PDF content
-        full_message = user_message
-        if pdf_context:
-            full_message = f"Application Details:\n{user_message}\n\nSupporting Documents:\n{pdf_context}"
+        # Construct a detailed prompt that clearly separates the application details and documents
+        full_message = f"""Application Details:
+{user_message}
+
+"""
+        if documents_context:
+            full_message += "Submitted Documents:\n"
+            for doc in documents_context:
+                full_message += f"\n--- Document: {doc['filename']} ---\n{doc['content']}\n"
+        else:
+            full_message += "\nNote: No supporting documents were provided with this application."
 
         try:
             # Initialize OpenAI client with form API key
@@ -171,7 +181,7 @@ def rejection_simulation():
             client = OpenAI(api_key=api_key)
             
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4",  # Fixed model name
                 messages=[
                     {"role": "system", "content": REJECTION_SIMULATION_PROMPT},
                     {"role": "user", "content": full_message}
