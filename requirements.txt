@@ -1,0 +1,7 @@
+
+bleach
+flask
+flask-wtf
+openai
+werkzeug
+wtforms
